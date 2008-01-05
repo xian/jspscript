@@ -3,7 +3,7 @@
 <html>
 <head>
   <title>Test</title>
-    <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
+  <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
   <script type="text/javascript" src="../src/JspScript.js"></script>
 </head>
 <body>
@@ -202,6 +202,28 @@
     });
 
     assertNodes(['@', 'contents', '@'], template.render());
+  }
+
+  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes() {
+    var template = env.createTemplateFromString(
+        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
+        'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
+    env.registerTaglib('http://xxx/xxx', {
+      test: env.createTemplateFromString('<jsp:doBody/>')
+    });
+
+    assertNodes(['attr from outside works, ', 'inside a tag body it works also!'], template.render({value: 'works'}));
+  }
+
+  function testTaglibTagAttributesOverrideOuterAttributes() {
+    var template = env.createTemplateFromString(
+        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
+        'attr from outside ${value}, <x:test value="can be overridden">inside a tag body it ${value}</x:test>');
+    env.registerTaglib('http://xxx/xxx', {
+      test: env.createTemplateFromString('<jsp:doBody/>')
+    });
+
+    assertNodes(['attr from outside works, ', 'inside a tag body it can be overridden'], template.render({value: 'works'}));
   }
 
   function testTranslateExpression() {

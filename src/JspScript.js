@@ -10,7 +10,7 @@ JspScript.Env = function() {
 
 JspScript.Env.JSP_TAGS = {
   doBody: function(name, jspTagAttrs, parent, attrs, tagContext) {
-    tagContext.renderBody(parent);
+    tagContext.renderBody(parent, attrs);
     console.log('after dobody, parent is', parent);
     console.dirxml(parent);
   }
@@ -142,9 +142,10 @@ JspScript.Env.prototype.compileExpression = function(expression) {
 };
 
 
-JspScript.TagContext = function(template, childNodes) {
+JspScript.TagContext = function(template, childNodes, attrs) {
   this.template = template;
   this.childNodes = childNodes;
+  this.attrs = attrs;
 };
 
 JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
@@ -152,7 +153,7 @@ JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
   console.dir(this);
   for (var index = 0; index < this.childNodes.length; index++) {
     console.log('renderBody walk', this.childNodes[index], parent, extraAttrs);
-    this.template.walk_(this.childNodes[index], parent, extraAttrs, null);
+    this.template.walk_(this.childNodes[index], parent, [extraAttrs, this.attrs], null);
   }
 };
 
@@ -289,7 +290,7 @@ JspScript.Template.prototype.handleElement_ = function(el, parent, attrs, tagCon
       subTagAttrs[subTagAttr.name] = this.evalAttr_(subTagAttr.value, attrs);
     }
 
-    tagTemplate.renderTag_(subTagAttrs, parent, new JspScript.TagContext(this, el.childNodes));
+    tagTemplate.renderTag_(subTagAttrs, parent, new JspScript.TagContext(this, el.childNodes, attrs));
     return;
   }
 
@@ -331,7 +332,19 @@ JspScript.Template.prototype.evalAttr_ = function(origValue, attrs) {
 
 JspScript.Template.prototype.eval_ = function(expr, attrs) {
   var fn = this.env_.compileExpression(expr);
-  return fn(function(name) { console.log('ZZZZZZZZZZZZZZZ', name, attrs[name]); return attrs[name]; });
+
+  var getAttr = function(name) {
+    if (attrs instanceof Array) {
+      for (var i = 0; i < attrs.length; i++) {
+        if (name in attrs[i]) return attrs[i][name];
+      }
+      return null;
+    } else {
+      return attrs[name];
+    }
+  };
+
+  return fn(getAttr);
 };
 
 JspScript.Template.prototype.createElement_ = function(tagName) {
