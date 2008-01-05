@@ -1,0 +1,64 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Test</title>
+    <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
+  <script type="text/javascript" src="../src/JspScript.js"></script>
+  <script type="text/javascript" src="../src/CTld.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+  var env;
+
+  function setUp() {
+    env = new JspScript.Env();
+    env.registerTaglib('http://java.sun.com/jsp/jstl/core', JspScript.Env.CTld);
+  }
+
+  function testForEach() {
+    var template = env.createTemplateFromString(
+        '<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>' +
+        '<c:forEach items="${numbers}" var="number">${number}</c:forEach>'
+    );
+
+    assertNodes(['1', '2', '3'], template.render({numbers: [1, 2, 3]}));
+  }
+
+  function testIf() {
+    var template = env.createTemplateFromString(
+        '<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>' +
+        '<c:if test="${bool}">was true</c:if><c:if test="${!bool}">was false</c:if>'
+    );
+
+    assertNodes(['was true'], template.render({bool: true}));
+    assertNodes(['was false'], template.render({bool: false}));
+  }
+
+
+  function assertNodes(expectedNodes, nodes) {
+    console.log(nodes);
+    var actual = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (node.nodeType == Node.ELEMENT_NODE) {
+        actual.push('<' + node.tagName + '>');
+      } else if (node.nodeType == Node.TEXT_NODE) {
+        actual.push(node.nodeValue);
+      }
+    }
+    console.log(expectedNodes, actual);
+    if (expectedNodes.length != actual.length) {
+      fail('expected ' + expectedNodes + ' but found ' + actual);
+    }
+    assertArrayEquals(expectedNodes, actual);
+  }
+
+  function assertChildren(expectedNodes, element) {
+    assertNodes(expectedNodes, element.childNodes);
+  }
+</script>
+
+</body>
+</html>

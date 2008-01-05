@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Test</title>
+  <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
+  <script type="text/javascript" src="../src/Template.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+  function testBasic() {
+    var template = new Template("../src/template.html");
+    var dom = {listItem: []};
+    var elem = template.render({headline: 'this is the headline', body: 'body'}, dom);
+    var div = document.createElement('div');
+    div.appendChild(elem);
+    assertEquals(
+        '<div>[object.Window]<h1>this.is.the.headline</h1>\\n' +
+        '\\n' +
+        '\\n' +
+        '....<p>body</p>\\n' +
+        '\\n' +
+        '\\n' +
+        '<ul>\\n' +
+        '....\\n' +
+        '........<li>0</li>\\n' +
+        '....\\n' +
+        '........<li>1</li>\\n' +
+        '....\\n' +
+        '........<li>2</li>\\n' +
+        '....\\n' +
+        '........<li>3</li>\\n' +
+        '....\\n' +
+        '........<li>4</li>\\n' +
+        '....\\n' +
+        '........<li>5</li>\\n' +
+        '....\\n' +
+        '........<li>6</li>\\n' +
+        '....\\n' +
+        '........<li>7</li>\\n' +
+        '....\\n' +
+        '........<li>8</li>\\n' +
+        '....\\n' +
+        '........<li>9</li>\\n' +
+        '....\\n' +
+        '</ul>\\n' +
+        '\\n' +
+        'The.end!\\n' +
+        '</div>',
+            div.innerHTML.replace(/\n/g, '\\n').replace(/ /g, '.'));
+  }
+</script>
+
+</body>
+</html>
