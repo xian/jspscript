@@ -10,7 +10,7 @@
 
 <script type="text/javascript">
   function testBasic() {
-    var template = new Template("../src/template.html");
+    var template = new Template("template.html");
     var dom = {listItem: []};
     var elem = template.render({headline: 'this is the headline', body: 'body'}, dom);
     var div = document.createElement('div');
