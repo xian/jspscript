@@ -20,5 +20,22 @@ JspScript.Env.CTld = {
         tagContext.renderBody(parent, {});
       }
     }
+  },
+
+  out: {
+    renderTag_: function(attrs, parent, tagContext) {
+      var value = attrs['value'];
+      var escapeXml = attrs['escapeXml'];
+      if (escapeXml != 'false' && escapeXml !== false) {
+        value = value
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/'/g, '&apos;')
+            .replace(/"/g, '&quot;')
+            ;
+      }
+      parent.appendChild(document.createTextNode(value));
+    }
   }
 }
