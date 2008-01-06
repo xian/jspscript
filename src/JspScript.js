@@ -42,7 +42,12 @@ JspScript.Env.prototype.createTemplateFromString = function(string) {
       '</__t2__>';
   console.log(string, '--->', text);
   var sourceDom = new DOMParser().parseFromString(text, 'application/xml');
-  return new JspScript.Template(sourceDom, this);
+
+  if (sourceDom.childNodes.length != 1 || sourceDom.firstChild.tagName != '__t2__') {
+    throw new Error('malformed source DOM');
+  }
+
+  return new JspScript.Template(sourceDom.firstChild, this);
 };
 
 JspScript.Env.prototype.registerTaglib = function(url, taglib) {
@@ -159,10 +164,7 @@ JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
 
 
 JspScript.Template = function(sourceDom, env) {
-  if (sourceDom.childNodes.length != 1 || sourceDom.firstChild.tagName != '__t2__') {
-    throw new Error('malformed source DOM');
-  }
-  this.templateXml_ = sourceDom.firstChild.childNodes;
+  this.templateXml_ = sourceDom.childNodes;
   this.env_ = env;
   this.compiled_ = false;
   this.taglibPrefixes_ = { };
