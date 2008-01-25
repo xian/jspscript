@@ -1,0 +1,21 @@
+<html>
+<head>
+  <script type="text/javascript" src="../src/JspScript.js"></script>
+</head>
+<body>
+<script type="text/javascript" src="page.jsp_generated.js"></script>
+<script type="text/javascript" src="test.tag_generated.js"></script>
+<script type="text/javascript">
+  var env = new JspScript.Env();
+  env.registerTaglib('http://xxx/xxx', {
+    test: new JspScript.Template(demo__test_tag, env)
+  });
+
+  var x = new JspScript.Template(demo__page_jsp, env);
+  var result = x.render({value: 'works'});
+  for (var i = 0; i < result.length; i++) {
+    document.body.appendChild(result[i]);
+  }
+</script>
+</body>
+</html>

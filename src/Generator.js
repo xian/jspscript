@@ -1,5 +1,6 @@
 JspScript.Scribe = function() {
   this.out_ = '';
+  this.noClose = false;
 }
 
 JspScript.Scribe.escRe = /(['\\])/g;
@@ -10,14 +11,11 @@ JspScript.Scribe.prototype.put = function(s) {
 }
 
 JspScript.jsEsc = function(s) {
-//  if (java && java.lang && java.lang.String) {
-//    return new java.lang.String(s).replaceAll("(['\\\\])", "\\\\$1").replaceAll("\n", '\\n');
-//  }
+  s = s.toString();
   return s.replace(JspScript.Scribe.escRe, '\\$1').replace(JspScript.Scribe.newlineRe, '\\n');
 };
 
 JspScript.Scribe.prototype.getScript = function() {
-  console.log(this.out_);
   return this.out_;
 }
 
@@ -53,7 +51,6 @@ JspScript.Scribe.prototype.prolog = function() {
       + '  parent.appendChild(t instanceof Node ? t : document.createTextNode(t));\n'
       + '}\n'
       + 'function n(prefix, tag, tagAttrs, bodyFn) {\n'
-      + '    console.log("save originals...", top, stack, parent);\n'
       + '  var origTop = top; top = [];\n'
       + '  var origStack = stack; stack = [];\n'
       + '  var origParent = parent; parent = { appendChild: function(e) { top.push(e); } };\n'
@@ -61,24 +58,15 @@ JspScript.Scribe.prototype.prolog = function() {
       + '  try {\n'
       + '    var results = template.doTag_(prefix, tag, tagAttrs, parent, tagContext);\n'
       + '    top = origTop;\n'
-      + '    console.log("after doTag_, results are:", results);\n'
       + '    for (var i = 0; i < results.length; i++) origParent.appendChild(results[i]);\n'
-      + '    console.log("return subs...", "top", top, "stack", stack, "parent", parent);\n'
       + '    var keepTop = top;\n'
       + '    return keepTop;\n'
       + '  } finally {\n'
       + '    top = origTop; stack = origStack; parent = origParent;\n'
-      + '    console.log("reset to originals...", top, stack, parent);\n'
       + '  }\n'
       + '}\n'
       + 'function e(a) {\n'
-      + '  console.group();\n'
-      + '  console.log("called e with output from renderBody:", a);\n'
-      + '  console.log("within e, top is:", top);\n'
-      + '  console.dir(top);\n'
       + '  for (var i = 0; i < a.length; i++) parent.appendChild(a[i]);\n'
-      + '  console.log("top is now:", top);\n'
-      + '  console.dir(top);\n'
       + '}\n'
       + 'function g(t) {\n'
       + '  return attrs[t];\n'
@@ -102,9 +90,9 @@ JspScript.Scribe.prototype.element = function(tagName, attributes, hasChildren) 
   for (var i = 0; i < attributes.length; i++) {
     attrList += ',\'';
     var attribute = attributes[i];
-    attrList += JspScript.jsEsc(attribute.name);
+    attrList += JspScript.jsEsc(attribute.name + "");
     attrList += '\',';
-    attrList += attribute.value;
+    attrList += attribute.value + "";
   }
   this.put((hasChildren ? 'q' : 'a') +
       '(\'' + JspScript.jsEsc(tagName) + '\'' + attrList + ');\n');
@@ -126,9 +114,9 @@ JspScript.Scribe.prototype.attrJson = function(attributes) {
   this.put('{');
   for (var i = 0; i < attributes.length; i++) {
     if (i > 0) this.put(',');
-    this.put(attributes[i].name);
+    this.put(attributes[i].name + "");
     this.put(':');
-    this.put(attributes[i].value);
+    this.put(attributes[i].value + "");
   }
   this.put('}');
 };
@@ -146,7 +134,6 @@ JspScript.Scribe.prototype.tagStart = function(prefix, name, attributes) {
     return;
   }
 
-  console.log('tagStart', prefix, name, attributes);
   this.put('n(\'' + JspScript.jsEsc(prefix) + '\',\'' + JspScript.jsEsc(name) + '\', ');
   this.attrJson(attributes);
   this.put(', function(g, tagContext) {\n');
@@ -174,20 +161,17 @@ JspScript.Generator = function(env) {
 
 JspScript.Generator.prototype.generateFunctionBody = function(nodes, scribe) {
   scribe.prolog();
-  console.log('walkNodes...', nodes);
   this.walkNodes_(nodes, scribe);
   scribe.epilog();
 };
 
 JspScript.Generator.prototype.walkNodes_ = function(nodes, scribe) {
   for (var i = 0; i < nodes.length; i++) {
-    console.log("walk..." + i);
     var node = nodes.item(i);
-    console.log(node);
     //noinspection JSUnresolvedVariable
     switch (node.nodeType) {
       case Node.TEXT_NODE:
-        this.genTextCode_(node.nodeValue, scribe);
+        this.genTextCode_(node.nodeValue + "", scribe);
         break;
 
       case Node.ELEMENT_NODE:
@@ -214,10 +198,11 @@ JspScript.Generator.prototype.genAttributesCode_ = function(attributes) {
   }
 
   for (var i = 0; i < attributes.length; i++) {
-    this.genTextCode_(attributes.item(i).value, attrScribe);
+    var attribute = attributes.item(i);
+    this.genTextCode_(attribute.value + "", attrScribe);
 
     var attr = {
-      name: JspScript.jsEsc(attributes.item(i).name),
+      name: JspScript.jsEsc(attribute.name + ""),
       value: out
     };
 
@@ -230,12 +215,10 @@ JspScript.Generator.prototype.genAttributesCode_ = function(attributes) {
 
 JspScript.Generator.prototype.genTextCode_ = function(text, scribe) {
   JspScript.Template.RE_EL.lastIndex = 0;
-  console.log('getTextCode', text);
 
   var start = 0;
   var match;
   while ((match = JspScript.Template.RE_EL.exec(text))) {
-//    console.log('match', match);
     if (start < match.index) {
       scribe.text(text.substring(start, match.index));
       start = match.index;
@@ -243,8 +226,6 @@ JspScript.Generator.prototype.genTextCode_ = function(text, scribe) {
 
     var expr = this.env_.translateExpression(match[1]);
     scribe.expression(expr);
-
-    console.log('expr', expr);
 
     start = JspScript.Template.RE_EL.lastIndex;
   }
@@ -258,21 +239,19 @@ JspScript.Generator.prototype.genTextCode_ = function(text, scribe) {
 JspScript.Generator.prototype.genElementCode_ = function(el, scribe) {
   var hasChildren = el.childNodes.length > 0;
 
-  var atMatch = JspScript.Template.RE_TAG_AT.exec(el.tagName);
+  var atMatch = JspScript.Template.RE_TAG_AT.exec(el.tagName + "");
   if (atMatch) {
     var op = atMatch[1];
     if (op == 'taglib') {
-      var taglibPrefix = el.getAttribute('prefix');
-      var taglibUri = el.getAttribute('uri');
+      var taglibPrefix = el.getAttribute('prefix') + "";
+      var taglibUri = el.getAttribute('uri') + "";
       scribe.taglibDeclaration(taglibPrefix, taglibUri);
     }
     return;
   }
 
-  var nsMatch = JspScript.Template.RE_TAG.exec(el.tagName);
+  var nsMatch = JspScript.Template.RE_TAG.exec(el.tagName + "");
   if (nsMatch) {
-//    console.log('ns', el, nsMatch[1], nsMatch[2]);
-
     var tagPrefix = nsMatch[1];
     var tagName = nsMatch[2];
 
@@ -285,7 +264,7 @@ JspScript.Generator.prototype.genElementCode_ = function(el, scribe) {
     return;
   }
 
-  scribe.element(el.tagName, this.genAttributesCode_(el.attributes, scribe), hasChildren);
+  scribe.element(el.tagName + "", this.genAttributesCode_(el.attributes, scribe), hasChildren);
   if (hasChildren) {
     this.walkNodes_(el.childNodes, scribe);
     scribe.pop();

@@ -42,7 +42,7 @@ JspScript.Env.prototype.createTemplateFromString = function(string) {
   generator.generateFunctionBody(sourceDom.childNodes, scribe);
   var fn = new Function('attrs', 'tagContext', scribe.getScript());
   console.log('createTemplateFromString: ', string, fn.toString());
-  return new JspScript.Template(sourceDom, fn, this);
+  return new JspScript.Template(fn, this);
 };
 
 JspScript.Env.prototype.createDomFromString = function(string) {
@@ -53,7 +53,7 @@ JspScript.Env.prototype.createDomFromString = function(string) {
           .replace(/%>/g, '/>')
           .replace(/<(\/)?(\w+):/g, '<$1__t2_$2__') +
       '</__t2__>';
-//  console.log(string, '--->', text);
+  console.log(string, '--->', text);
   var sourceDom = this.domParserFunction(text);
 
   if (sourceDom.childNodes.length != 1 || sourceDom.firstChild.tagName != '__t2__') {
@@ -190,8 +190,7 @@ JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
 };
 
 
-JspScript.Template = function(sourceDom, templateFunction, env) {
-  this.templateXml_ = sourceDom.childNodes;
+JspScript.Template = function(templateFunction, env) {
   this.templateFunction = templateFunction;
   this.env_ = env;
   this.compiled_ = false;

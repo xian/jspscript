@@ -285,7 +285,7 @@
     var script = spyScribe.getScript();
     console.log(script);
     var fn = new Function('attrs', script)
-    var template = new JspScript.Template('', fn, env);
+    var template = new JspScript.Template(fn, env);
     assertText('@contents@', template.render({}));
   }
 
@@ -322,7 +322,7 @@
     var script = spyScribe.getScript();
     var fn = new Function('attrs', 'tagContext', script);
     console.log("testJspDoBodyCall_Scribe", fn.toString());
-    var template = new JspScript.Template('', fn, env);
+    var template = new JspScript.Template(fn, env);
 
     var bodyFnCalled = false;
     var bodyFunction = function(g, tagContext){
@@ -411,7 +411,7 @@
     var script = spyScribe.getScript();
     console.log(script);
     var fn = new Function('attrs', script);
-    var template = new JspScript.Template('', fn, env);
+    var template = new JspScript.Template(fn, env);
 
     assertNodes(['attr from outside ', 'works', ', ', 'inside a tag body it ', 'works', ' ', 'also', '!'],
         template.render({value: 'works'}));
