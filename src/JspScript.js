@@ -4,7 +4,10 @@ if (null) {
 
 var JspScript = {}, AttrMap;
 
-JspScript.Env = function() {
+JspScript.Env = function(domParserFunction) {
+  this.domParserFunction = domParserFunction || function(text) {
+    return new DOMParser().parseFromString(text, 'application/xml');
+  }
   this.taglibs_ = {};
 };
 
@@ -12,7 +15,7 @@ JspScript.Env.JSP_TAGS = {
   doBody: function(name, jspTagAttrs, parent, attrs, tagContext) {
     tagContext.renderBody(parent, attrs);
     console.log('after dobody, parent is', parent);
-    console.dirxml(parent);
+//    console.dirxml(parent);
   }
 };
 
@@ -33,6 +36,16 @@ JspScript.Env.prototype.createTemplateFromUrl = function(url) {
 };
 
 JspScript.Env.prototype.createTemplateFromString = function(string) {
+  var sourceDom = this.createDomFromString(string);
+  var generator = new JspScript.Generator(this);
+  var scribe = new JspScript.Scribe();
+  generator.generateFunctionBody(sourceDom.childNodes, scribe);
+  var fn = new Function('attrs', 'tagContext', scribe.getScript());
+  console.log('createTemplateFromString: ', string, fn.toString());
+  return new JspScript.Template(sourceDom, fn, this);
+};
+
+JspScript.Env.prototype.createDomFromString = function(string) {
   var text =
       '<__t2__>' +
       string
@@ -40,15 +53,15 @@ JspScript.Env.prototype.createTemplateFromString = function(string) {
           .replace(/%>/g, '/>')
           .replace(/<(\/)?(\w+):/g, '<$1__t2_$2__') +
       '</__t2__>';
-  console.log(string, '--->', text);
-  var sourceDom = new DOMParser().parseFromString(text, 'application/xml');
+//  console.log(string, '--->', text);
+  var sourceDom = this.domParserFunction(text);
 
   if (sourceDom.childNodes.length != 1 || sourceDom.firstChild.tagName != '__t2__') {
     throw new Error('malformed source DOM');
   }
+  return sourceDom.firstChild;
+}
 
-  return new JspScript.Template(sourceDom.firstChild, this);
-};
 
 JspScript.Env.prototype.registerTaglib = function(url, taglib) {
   this.taglibs_[url] = taglib;
@@ -147,24 +160,39 @@ JspScript.Env.prototype.compileExpression = function(expression) {
 };
 
 
-JspScript.TagContext = function(template, childNodes, attrs) {
+JspScript.TagContext = function(template, bodyFunction, attrs) {
   this.template = template;
-  this.childNodes = childNodes;
+  this.bodyFunction = bodyFunction;
   this.attrs = attrs;
 };
 
 JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
   console.log('renderBody');
   console.dir(this);
-  for (var index = 0; index < this.childNodes.length; index++) {
-    console.log('renderBody walk', this.childNodes[index], parent, extraAttrs);
-    this.template.walk_(this.childNodes[index], parent, [extraAttrs, this.attrs], null);
+//  for (var index = 0; index < this.childNodes.length; index++) {
+//    console.log('renderBody walk', this.childNodes[index], parent, extraAttrs);
+//    this.template.walk_(this.childNodes[index], parent, [extraAttrs, this.attrs], null);
+//  }
+  var attrs = this.attrs;
+  if (attrs == null) throw new Error("attrs was null");
+
+  var g = function(t) {
+    return t in extraAttrs ? extraAttrs[t] : attrs[t];
+  };
+  var output = this.bodyFunction(g, this);
+  var newOutput = new Array(output.length);
+  for (var i = 0; i < output.length; i++) {
+    newOutput[i] = output[i];
   }
+  output.length = 0;
+  console.log('renderBody output:', newOutput);
+  return newOutput;
 };
 
 
-JspScript.Template = function(sourceDom, env) {
+JspScript.Template = function(sourceDom, templateFunction, env) {
   this.templateXml_ = sourceDom.childNodes;
+  this.templateFunction = templateFunction;
   this.env_ = env;
   this.compiled_ = false;
   this.taglibPrefixes_ = { };
@@ -175,9 +203,11 @@ JspScript.Template.RE_TAG = /__t2_(.*)__(.*)/;
 JspScript.Template.RE_TAG_AT = /__t2at__(.*)/;
 
 JspScript.Template.prototype.render = function(attrs) {
-  var root = document.createElement('div');
-  this.renderTag_(attrs, root, null);
-  return root.childNodes;
+//  console.log("function:", this.templateFunction.toString(), attrs);
+  return this.templateFunction(attrs);
+//  var root = document.createElement('div');
+//  this.renderTag_(attrs, root, null);
+//  return root.childNodes;
 }
 
 JspScript.Template.prototype.renderTag_ = function(attrs, parent, tagContext) {
@@ -186,10 +216,18 @@ JspScript.Template.prototype.renderTag_ = function(attrs, parent, tagContext) {
 //  }
 //  console.log(this.templateXml_);
 
-  var nodes = this.templateXml_;
-  for (var i = 0; i < nodes.length; i++) {
-    this.walk_(nodes[i], parent, attrs, tagContext);
-  }
+//  var nodes = this.templateXml_;
+//  for (var i = 0; i < nodes.length; i++) {
+//    this.walk_(nodes[i], parent, attrs, tagContext);
+//  }
+
+//  tagCon.call(this, );
+
+  console.log("renderTag", tagContext, this.templateFunction);
+//  return this.templateFunction(attrs, tagContext);
+  var output = this.templateFunction(attrs, tagContext);
+  console.log('renderTag output:', output);
+  return output;
 };
 
 JspScript.Template.prototype.walk_ = function(el, parent, attrs, tagContext) {
@@ -213,7 +251,7 @@ JspScript.Template.prototype.handleTextNode_ = function(el, parent, attrs) {
   var text = el.nodeValue;
   var start = 0;
   var match;
-  while (match = JspScript.Template.RE_EL.exec(text)) {
+  while ((match = JspScript.Template.RE_EL.exec(text))) {
 //    console.log('match', match);
     if (start < match.index) {
       current += text.substring(start, match.index);
@@ -252,6 +290,20 @@ JspScript.Template.prototype.doJspTag_ = function(name, jspTagAttrs, parent, att
     throw new Error('unknown or unsupported tag <jsp:' + name + '/>');
   }
   handlerFn(name, jspTagAttrs, parent, attrs, tagContext, this);
+}
+
+JspScript.Template.prototype.doTag_ = function(prefix, name, jspTagAttrs, parent, tagContext) {
+  var taglibUrl = this.taglibPrefixes_[prefix];
+  if (!taglibUrl) {
+    throw new Error('unknown taglib prefix "' + prefix + '"');
+  }
+  //    console.log(nsMatch, taglibUrl, tagName);
+  var tagTemplate = this.env_.getTagTemplate(taglibUrl, name);
+
+  console.log("tagTemplate.renderTag_", jspTagAttrs, parent, tagContext);
+  var contents = tagTemplate.renderTag_(jspTagAttrs, parent, tagContext);
+  console.log("tagTemplate.renderTag_ returns:", contents);
+  return contents;
 }
 
 JspScript.Template.prototype.handleElement_ = function(el, parent, attrs, tagContext) {
@@ -315,7 +367,7 @@ JspScript.Template.prototype.evalAttr_ = function(origValue, attrs) {
   var start = 0;
   var match;
   var value = [];
-  while (match = JspScript.Template.RE_EL.exec(origValue)) {
+  while ((match = JspScript.Template.RE_EL.exec(origValue))) {
     if (start < match.index) {
       value.push(origValue.substring(start, match.index));
       start = match.index;

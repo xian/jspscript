@@ -33,3 +33,25 @@ function assertNodes(expected, actualNodes) {
 function assertChildren(expectedNodes, element) {
   assertNodes(expectedNodes, element.childNodes);
 }
+
+function createSpy(baseClass) {
+  var spyClass = function() {
+    this.callLog_ = [];
+  };
+
+  var addSpyMethod = function(methodName) {
+    spyClass.prototype[methodName] = function() {
+      var call = [methodName];
+      for (var i = 0; i < arguments.length; i++) {
+        call.push(arguments[i]);
+      }
+      this.callLog_.push(call);
+    }
+  };
+
+  for (var methodName in baseClass.prototype) {
+    addSpyMethod(methodName);
+  }
+
+  return new spyClass();
+};

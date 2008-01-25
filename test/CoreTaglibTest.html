@@ -6,6 +6,7 @@
   <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
   <script type="text/javascript" src="TestSupport.js"></script>
   <script type="text/javascript" src="../src/JspScript.js"></script>
+  <script type="text/javascript" src="../src/Generator.js"></script>
   <script type="text/javascript" src="../src/CoreTaglib.js"></script>
 </head>
 <body>
@@ -25,7 +26,7 @@
         '<c:forEach items="${numbers}" var="number">${number}</c:forEach>'
     );
 
-    assertNodes(['1', '2', '3'], template.render({numbers: [1, 2, 3]}));
+    assertText('123', template.render({numbers: [1, 2, 3]}));
   }
 
   function testIf() {
@@ -34,8 +35,8 @@
         '<c:if test="${bool}">was true</c:if><c:if test="${!bool}">was false</c:if>'
     );
 
-    assertNodes(['was true'], template.render({bool: true}));
-    assertNodes(['was false'], template.render({bool: false}));
+    assertText('was true', template.render({bool: true}));
+    assertText('was false', template.render({bool: false}));
   }
 
   function testOut() {

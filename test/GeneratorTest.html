@@ -5,6 +5,7 @@
   <title>Test</title>
   <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
   <script type="text/javascript" src="TestSupport.js"></script>
+  <script type="text/javascript" src="JsMock.js"></script>
   <script type="text/javascript" src="../src/JspScript.js"></script>
   <script type="text/javascript" src="../src/Generator.js"></script>
 </head>
@@ -13,15 +14,66 @@
 <script type="text/javascript">
 
   var env;
+  var spyScribe;
+  var generator;
+  var out;
 
   function setUp() {
     env = new JspScript.Env();
+    generator = new JspScript.Generator(env);
+
+    spyScribe = new JspScript.Scribe();
+    out = '';
+    spyScribe.oldPut = spyScribe.put;
+    spyScribe.put = function(str) {
+      out += str; spyScribe.oldPut(str);
+    }
   }
 
-  function testSimpleDomGeneration() {
-    var template = env.createTemplateFromString(
+  function testSimpleDomGeneration_Generator() {
+    var dom = env.createDomFromString(
         '<html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>');
-    var rendered = template.render();
+
+    var spyScribe = new JsMock(JspScript.Scribe, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('element', 'html', [], true);
+      JsMock.expect('element', 'body', [], true);
+      JsMock.expect('element', 'h2', [{name: 'id', value: '\'header\''}], true);
+      JsMock.expect('text', 'Hello World!');
+      JsMock.expect('pop');
+      JsMock.expect('text', 'More text...\n');
+      JsMock.expect('pop');
+      JsMock.expect('pop');
+      JsMock.expect('epilog');
+    });
+
+    generator.generateFunctionBody(dom.childNodes, spyScribe);
+
+    JsMock.validate(spyScribe);
+  }
+
+  function testSimpleDomGeneration_Scribe() {
+    // <html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>
+
+    spyScribe.prolog();
+    spyScribe.element('html', [], true);
+    spyScribe.element('body', [], true);
+
+    out = '';
+    spyScribe.element('h2', [{name: 'id', value: '\'header\''}], true);
+    assertEquals("q('h2','id','header');\n", out);
+
+    spyScribe.text('Hello World!');
+    spyScribe.pop();
+    spyScribe.text('More text...\n');
+    spyScribe.pop();
+    spyScribe.pop();
+    spyScribe.epilog();
+
+    var script = spyScribe.getScript();
+    console.log(script);
+    var fn = new Function('attrs', script)
+    var rendered = fn({});
 
     assertNodes(['<HTML>'], rendered);
     var html = rendered[0];
@@ -32,7 +84,7 @@
     assertEquals('header', h2.getAttribute('id'));
   }
 
-  function testSimpleDomGenerationCompiled() {
+/*  function testSimpleDomGenerationCompiled() {
     var template = {render: function() {
       var top = [];
       var stack = [], parent = { appendChild: function(e) { top.push(e); } };
@@ -77,8 +129,7 @@
 
     assertNodes(['<P>'], rendered);
     var p = rendered[0];
-//    assertChildren(['Hello Mabel, you old scallywag'], p); // todo: prefer go back to this one
-    assertChildren(['Hello ', 'Mabel', ', you old ', 'scallywag'], p);
+    assertChildren(['Hello Mabel, you old scallywag'], p);
   }
 
   function testExpressionsInTextNodesWhichReturnDomElements() {
@@ -100,8 +151,7 @@
 
     assertNodes(['<P>'], rendered);
     var p = rendered[0];
-//    assertChildren(['Hello Larry, you are 1200 months old'], p); // todo: prefer go back to this one
-    assertChildren(['Hello ', 'Larry', ', you are ', '1200', ' months old'], p);
+    assertChildren(['Hello Larry, you are 1200 months old'], p);
   }
 
   function testExpressionsInAttributeValues() {
@@ -146,7 +196,7 @@
       test: env.createTemplateFromString('hello ${name}!')
     });
 
-    assertText('hello joe!', template.render());
+    assertNodes(['hello joe!'], template.render());
   }
 
   function testTaglibTagAttrsAreEvaluated() {
@@ -156,7 +206,7 @@
       test: env.createTemplateFromString('hello ${name}!')
     });
 
-    assertText('hello joe-bob!', template.render({other: 'bob'}));
+    assertNodes(['hello joe-bob!'], template.render({other: 'bob'}));
   }
 
   function testTaglibTagAttrTypeConversion() {
@@ -166,7 +216,7 @@
       test: env.createTemplateFromString('item count: ${x.length}')
     });
 
-    assertText('item count: 3', template.render({items: ['joe', 'bob', 'frank']}));
+    assertNodes(['item count: 3'], template.render({items: ['joe', 'bob', 'frank']}));
   }
 
   function testUnknownTaglibError() {
@@ -189,7 +239,7 @@
     }
   }
 
-  function TODO_testUnknownJspTagError() {
+  function testUnknownJspTagError() {
     var template = env.createTemplateFromString('<jsp:xxx/>');
 
     try {
@@ -198,28 +248,173 @@
       assertContains('unknown or unsupported tag <jsp:xxx/>', e.toString());
     }
   }
+*/
 
-  function testTaglibTagBody() {
-    var template = env.createTemplateFromString(
+  function testTaglibTagBody_Generator() {
+    var dom = env.createDomFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>');
+
+    var spyScribe = new JsMock(JspScript.Scribe, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
+      JsMock.expect('tagStart', 'x', 'test', [], generator);
+      JsMock.expect('text', 'contents');
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
+
+    generator.generateFunctionBody(dom.childNodes, spyScribe);
+
+    JsMock.validate(spyScribe);
+  }
+
+  function testTaglibTagBody_Scribe() {
+//  '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>'
     env.registerTaglib('http://xxx/xxx', {
       test: env.createTemplateFromString('@<jsp:doBody/>@')
     });
 
+    spyScribe.prolog();
+    spyScribe.taglibDeclaration('x', 'http://xxx/xxx');
+    out = '';
+    spyScribe.tagStart('x', 'test', [], generator);
+    spyScribe.text('contents');
+    spyScribe.tagEnd();
+    spyScribe.epilog();
+
+    var script = spyScribe.getScript();
+    console.log(script);
+    var fn = new Function('attrs', script)
+    var template = new JspScript.Template('', fn, env);
     assertText('@contents@', template.render({}));
   }
 
-  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes() {
-    var template = env.createTemplateFromString(
+  function testJspDoBodyCall_Generator() {
+    var dom = env.createDomFromString(
+        '<jsp:doBody/>');
+
+    var spyScribe = new JsMock(JspScript.Scribe, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('tagStart', 'jsp', 'doBody', [], generator);
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
+
+    generator.generateFunctionBody(dom.childNodes, spyScribe);
+
+    JsMock.validate(spyScribe);
+  }
+
+  function testJspDoBodyCall_Scribe() {
+//        '<jsp:doBody/>'
+
+    spyScribe.prolog();
+
+    out = '';
+    spyScribe.tagStart('jsp', 'doBody', [], generator);
+    spyScribe.tagEnd();
+
+    assertEquals(
+        "e(tagContext.renderBody(null, attrs));\n", out);
+
+    spyScribe.epilog();
+
+    var script = spyScribe.getScript();
+    var fn = new Function('attrs', 'tagContext', script);
+    console.log("testJspDoBodyCall_Scribe", fn.toString());
+    var template = new JspScript.Template('', fn, env);
+
+    var bodyFnCalled = false;
+    var bodyFunction = function(g, tagContext){
+      bodyFnCalled = true;
+      assertEquals('outerValue', g('outer'));
+      assertEquals('innerValue', g('inner'));
+      assertEquals('from inner', g('override'));
+      return [document.createTextNode("value from bodyFunction")];
+    };
+    var tagContext = new JspScript.TagContext(null, bodyFunction, {outer: 'outerValue', override: 'from outer'});
+    assertText("value from bodyFunction",
+        template.renderTag_({inner: 'innerValue', override: 'from inner'}, null, tagContext));
+    assertTrue(bodyFnCalled);
+  }
+
+  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Generator() {
+    var dom = env.createDomFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
         'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
+
+    var spyScribe = new JsMock(JspScript.Scribe, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
+      JsMock.expect('text', 'attr from outside ');
+      JsMock.expect('expression', 'g(\'value\')');
+      JsMock.expect('text', ', ');
+      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}], generator);
+      JsMock.expect('text', 'inside a tag body it ');
+      JsMock.expect('expression', 'g(\'value\')');
+      JsMock.expect('text', ' ');
+      JsMock.expect('expression', 'g(\'tagValue\')');
+      JsMock.expect('text', '!');
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
+
+    generator.generateFunctionBody(dom.childNodes, spyScribe);
+
+    JsMock.validate(spyScribe);
+  }
+
+  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Scribe() {
+//        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
+//        'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
+
     env.registerTaglib('http://xxx/xxx', {
       test: env.createTemplateFromString('<jsp:doBody/>')
     });
 
-    assertText('attr from outside works, inside a tag body it works also!', template.render({value: 'works'}));
-//    assertNodes(['attr from outside ', 'works', ', ', 'inside a tag body it ', 'works', ' ', 'also', '!'],
-//        template.render({value: 'works'}));
+    spyScribe.prolog();
+    spyScribe.taglibDeclaration('x', 'http://xxx/xxx');
+    spyScribe.text('attr from outside ');
+    spyScribe.expression('g(\'value\')');
+    spyScribe.text(', ');
+
+    out = '';
+    spyScribe.tagStart('x', 'test', [{name: 'tagValue', value: '\'also\''}], generator);
+    spyScribe.text('inside a tag body it ');
+    spyScribe.expression('g(\'value\')');
+    spyScribe.text(' ');
+    spyScribe.expression('g(\'tagValue\')');
+    spyScribe.text('!');
+    spyScribe.tagEnd();
+
+    assertEquals(
+        "n('x','test', {tagValue:'also'}, function(g, tagContext) {\n" +
+        "w('inside a tag body it ');\n" +
+        "x(g('value'));\n" +
+        "w(' ');\n" +
+        "x(g('tagValue'));\n" +
+        "w('!');\n" +
+        "return top;\n" +
+        "}, attrs);\n", out);
+//    assertEquals(
+//        "this.doTag_('x','test', {tagValue:'also'}, parent,\n" +
+//        "new JspScript.TagContext(this, function(g, tagContext) {" +
+//        "w('inside a tag body it ');" +
+//        "x(g('value'));" +
+//        "w(' ');" +
+//        "x(g('tagValue'));" +
+//        "w('!');" +
+//        "}, attrs));", out);
+
+    spyScribe.epilog();
+
+    var script = spyScribe.getScript();
+    console.log(script);
+    var fn = new Function('attrs', script);
+    var template = new JspScript.Template('', fn, env);
+
+    assertNodes(['attr from outside ', 'works', ', ', 'inside a tag body it ', 'works', ' ', 'also', '!'],
+        template.render({value: 'works'}));
   }
 
   function testTaglibTagAttributesOverrideOuterAttributes() {
@@ -230,12 +425,12 @@
       test: env.createTemplateFromString('<jsp:doBody/>')
     });
 
-    // todo: prefer go back to this one:
 //    assertNodes(['attr from outside works, ', 'inside a tag body it can be overridden'], template.render({value: 'works'}));
     assertNodes(['attr from outside ', 'works', ', ', 'inside a tag body it ', 'can be overridden'],
         template.render({value: 'works'}));
   }
 
+/*
   function testTranslateExpression() {
     assertEquals('g(\'symbol\')',
         env.translateExpression('symbol'));
@@ -295,6 +490,7 @@
     console.log(rendered);
     assertEquals('html', rendered.tagName);
   }
+*/
 
 </script>
 

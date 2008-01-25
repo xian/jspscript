@@ -6,19 +6,22 @@ JspScript.Env.CoreTaglib = {
       var varName = attrs['var'];
       var extraAttrs = {};
       console.log(attrs);
+      var result = [];
       for (var index = 0; index < items.length; index++) {
         extraAttrs[varName] = items[index];
-        tagContext.renderBody(parent, extraAttrs);
+        var output = tagContext.renderBody(parent, extraAttrs);
+        console.log("foreach;", output.length);
+        result = result.concat(output);
+        console.log(extraAttrs[varName], result.length);
       }
+      return result;
     }
   },
 
   'if': {
     renderTag_: function(attrs, parent, tagContext) {
       var test = attrs['test'];
-      if (test) {
-        tagContext.renderBody(parent, {});
-      }
+      return test ? tagContext.renderBody(parent, {}) : [];
     }
   },
 
@@ -35,7 +38,7 @@ JspScript.Env.CoreTaglib = {
             .replace(/"/g, '&quot;')
             ;
       }
-      parent.appendChild(document.createTextNode(value));
+      return [document.createTextNode(value)];
     }
   }
 }
