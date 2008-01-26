@@ -223,8 +223,12 @@ JspScript.Generator.prototype.genTextCode_ = function(text, scribe) {
       start = match.index;
     }
 
-    var expr = this.env_.translateExpression(match[1]);
-    scribe.expression(expr);
+    if (match[0][0] == '\\') { // escaped expression: \${xxx}
+      scribe.text(match[0].substring(1));
+    } else {
+      var expr = this.env_.translateExpression(match[1]);
+      scribe.expression(expr);
+    }
 
     start = JspScript.Template.RE_EL.lastIndex;
   }

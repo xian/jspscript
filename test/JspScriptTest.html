@@ -94,6 +94,13 @@
     assertTrue(button === p.childNodes[1]);
   }
 
+  function testEscapedExpressionsAreIgnored() {
+    var template = env.createTemplateFromString('This \\${expression} is escaped.');
+    var rendered = template.render({});
+
+    assertNodes(['This ', '${expression}', ' is escaped.'], rendered);
+  }
+
   function testComplexExpressions() {
     var template = env.createTemplateFromString('<p>Hello ${name.first}, you are ${age*12} months old</p>');
     var rendered = template.render({name: {first: 'Larry', last: 'Harvey'}, age: '100'});

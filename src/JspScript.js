@@ -14,7 +14,7 @@ JspScript.Env = function(domParserFunction) {
 JspScript.Env.JSP_TAGS = {
   doBody: function(name, jspTagAttrs, parent, attrs, tagContext) {
     tagContext.renderBody(parent, attrs);
-    console.log('after dobody, parent is', parent);
+//    console.log('after dobody, parent is', parent);
 //    console.dirxml(parent);
   }
 };
@@ -56,7 +56,7 @@ JspScript.Env.prototype.createDomFromString = function(string) {
           .replace(/%>/g, '/>')
           .replace(/<(\/)?(\w+):/g, '<$1__t2_$2__') +
       '</__t2__>';
-  console.log(string, '--->', text);
+//  console.log(string, '--->', text);
   var sourceDom = this.domParserFunction(text);
 
   if (sourceDom.childNodes.length != 1 || sourceDom.firstChild.tagName != '__t2__') {
@@ -170,8 +170,8 @@ JspScript.TagContext = function(template, bodyFunction, attrs) {
 };
 
 JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
-  console.log('renderBody');
-  console.dir(this);
+//  console.log('renderBody');
+//  console.dir(this);
 //  for (var index = 0; index < this.childNodes.length; index++) {
 //    console.log('renderBody walk', this.childNodes[index], parent, extraAttrs);
 //    this.template.walk_(this.childNodes[index], parent, [extraAttrs, this.attrs], null);
@@ -188,7 +188,7 @@ JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
     newOutput[i] = output[i];
   }
   output.length = 0;
-  console.log('renderBody output:', newOutput);
+//  console.log('renderBody output:', newOutput);
   return newOutput;
 };
 
@@ -200,7 +200,7 @@ JspScript.Template = function(templateFunction, env) {
   this.taglibPrefixes_ = { };
 };
 
-JspScript.Template.RE_EL = /\${([^}]+)}/g;
+JspScript.Template.RE_EL = /\\?\${([^}]+)}/g;
 JspScript.Template.RE_TAG = /__t2_(.*)__(.*)/;
 JspScript.Template.RE_TAG_AT = /__t2at__(.*)/;
 
@@ -225,10 +225,10 @@ JspScript.Template.prototype.renderTag_ = function(attrs, parent, tagContext) {
 
 //  tagCon.call(this, );
 
-  console.log("renderTag", tagContext, this.templateFunction);
+//  console.log("renderTag", tagContext, this.templateFunction);
 //  return this.templateFunction(attrs, tagContext);
   var output = this.templateFunction(attrs, tagContext);
-  console.log('renderTag output:', output);
+//  console.log('renderTag output:', output);
   return output;
 };
 
@@ -247,7 +247,7 @@ JspScript.Template.prototype.walk_ = function(el, parent, attrs, tagContext) {
 
 JspScript.Template.prototype.handleTextNode_ = function(el, parent, attrs) {
   JspScript.Template.RE_EL.lastIndex = 0;
-  console.log('handleTextNode', el, parent, attrs);
+//  console.log('handleTextNode', el, parent, attrs);
   var current = '';
 
   var text = el.nodeValue;
@@ -262,7 +262,7 @@ JspScript.Template.prototype.handleTextNode_ = function(el, parent, attrs) {
 
     var result = this.eval_(match[1], attrs);
 
-    console.log('result', result);
+//    console.log('result', result);
     if (result instanceof Node) {
       if (current) {
         parent.appendChild(this.createTextNode_(current));
@@ -283,7 +283,7 @@ JspScript.Template.prototype.handleTextNode_ = function(el, parent, attrs) {
   if (current) {
     parent.appendChild(this.createTextNode_(current));
   }
-  console.dirxml(parent);
+//  console.dirxml(parent);
 };
 
 JspScript.Template.prototype.doJspTag_ = function(name, jspTagAttrs, parent, attrs, tagContext) {
@@ -302,9 +302,9 @@ JspScript.Template.prototype.doTag_ = function(prefix, name, jspTagAttrs, parent
   //    console.log(nsMatch, taglibUrl, tagName);
   var tagTemplate = this.env_.getTagTemplate(taglibUrl, name);
 
-  console.log("tagTemplate.renderTag_", jspTagAttrs, parent, tagContext);
+//  console.log("tagTemplate.renderTag_", jspTagAttrs, parent, tagContext);
   var contents = tagTemplate.renderTag_(jspTagAttrs, parent, tagContext);
-  console.log("tagTemplate.renderTag_ returns:", contents);
+//  console.log("tagTemplate.renderTag_ returns:", contents);
   return contents;
 }
 
