@@ -37,13 +37,16 @@ JspScript.Env.prototype.createTemplateFromUrl = function(url) {
 
 JspScript.Env.prototype.createTemplateFromString = function(string) {
   var sourceDom = this.createDomFromString(string);
+  return this.createTemplateFromDom(sourceDom);
+};
+
+JspScript.Env.prototype.createTemplateFromDom = function(sourceDom) {
   var generator = new JspScript.Generator(this);
   var scribe = new JspScript.Scribe();
   generator.generateFunctionBody(sourceDom.childNodes, scribe);
   var fn = new Function('attrs', 'tagContext', scribe.getScript());
-  console.log('createTemplateFromString: ', string, fn.toString());
   return new JspScript.Template(fn, this);
-};
+}
 
 JspScript.Env.prototype.createDomFromString = function(string) {
   var text =

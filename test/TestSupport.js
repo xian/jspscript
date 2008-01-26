@@ -3,13 +3,32 @@ function assertText(expectedText, actualNodes) {
   var actual = '';
   for (var i = 0; i < actualNodes.length; i++) {
     var node = actualNodes[i];
-    if (node.nodeType == Node.ELEMENT_NODE) {
-      actual += '[DOM: <' + node.tagName + '>]';
-    } else if (node.nodeType == Node.TEXT_NODE) {
-      actual += node.nodeValue;
-    }
+    actual += domToString(node);
   }
   assertEquals(expectedText, actual);
+}
+
+function domToString(node) {
+  var out = '';
+  if (node.nodeType == Node.ELEMENT_NODE) {
+    out += '[DOM: <' + node.tagName.toLowerCase();
+    for (var j = 0; j < node.attributes.length; j++) {
+      var attribute = node.attributes.item(j);
+      out += ' ' + attribute.name + '="' + attribute.value + '"';
+    }
+    if (node.childNodes.length == 0) {
+      out += '/>]';
+    } else {
+      out += '>';
+      for (var k = 0; k < node.childNodes.length; k++) {
+        out += domToString(node.childNodes.item(k));
+      }
+      out += '</' + node.tagName.toLowerCase() + '>]';
+    }
+  } else if (node.nodeType == Node.TEXT_NODE) {
+    out += node.nodeValue;
+  }
+  return out;
 }
 
 function assertNodes(expected, actualNodes) {

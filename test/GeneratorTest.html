@@ -492,6 +492,63 @@
   }
 */
 
+  function testJavaStringsAreConvertedToJsStringsForRhino() {
+    var JavaString = function(text) {
+      this._text = text;
+    }
+
+    JavaString.prototype.toString = function() {
+      return this._text;
+    }
+
+    JavaString.prototype.replace = function() {
+      throw new Error("should have been converted to JS string!");
+    }
+
+    var nodes = [
+      { nodeType: Node.ELEMENT_NODE, tagName: new JavaString("tag"),
+        attributes: [
+          { name: new JavaString('name'), value: new JavaString('value'), other: new JavaString('foof') }
+        ],
+        childNodes: [
+          { nodeType: Node.TEXT_NODE, nodeValue: new JavaString("text") }
+        ]
+      }
+    ];
+    nodes[0].attributes.item = function(i) { return this[i]; }
+    nodes[0].childNodes.item = function(i) { return this[i]; }
+
+    nodes.item = function(i) { return this[i]; }
+    var template = env.createTemplateFromDom({childNodes: nodes});
+    assertText('[DOM: <tag name="value">text</tag>]', template.render({}));
+  }
+
+  function testArrayIteratorsUseItemsMethodNotArrayIndexesForRhino() {
+    var DomItems = function(items) {
+      console.log('new DomItems', items);
+      this._items = items;
+      this.length = items.length;
+    }
+
+    DomItems.prototype.item = function(i) {
+      return this._items[i];
+    }
+
+    var nodes = new DomItems([
+      { nodeType: Node.ELEMENT_NODE, tagName: "tag",
+        attributes: new DomItems([
+          { name: 'name', value: 'value' }
+        ]),
+        childNodes: new DomItems([
+          { nodeType: Node.TEXT_NODE, nodeValue: "text" }
+        ])
+      }
+    ]);
+
+    var template = env.createTemplateFromDom({childNodes: nodes});
+    assertText('[DOM: <tag name="value">text</tag>]', template.render({}));
+  }
+
 </script>
 
 </body>

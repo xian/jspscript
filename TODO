@@ -1,0 +1,3 @@
+* clean cruft from JspScript.Template
+* minify boilerplate in generated fns, maybe pass it in as args?
+* add more tests asserting java.lang.String -> JS string conversion for Rhino

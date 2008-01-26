@@ -11,7 +11,6 @@ JspScript.Scribe.prototype.put = function(s) {
 }
 
 JspScript.jsEsc = function(s) {
-  s = s.toString();
   return s.replace(JspScript.Scribe.escRe, '\\$1').replace(JspScript.Scribe.newlineRe, '\\n');
 };
 
@@ -90,16 +89,16 @@ JspScript.Scribe.prototype.element = function(tagName, attributes, hasChildren) 
   for (var i = 0; i < attributes.length; i++) {
     attrList += ',\'';
     var attribute = attributes[i];
-    attrList += JspScript.jsEsc(attribute.name + "");
+    attrList += JspScript.jsEsc(attribute.name + ""); // todo: test stringification
     attrList += '\',';
-    attrList += attribute.value + "";
+    attrList += attribute.value + ""; // todo: test stringification
   }
   this.put((hasChildren ? 'q' : 'a') +
       '(\'' + JspScript.jsEsc(tagName) + '\'' + attrList + ');\n');
 };
 
 JspScript.Scribe.prototype.pop = function() {
-  this.put('z();');
+  this.put('z();\n');
 };
 
 JspScript.Scribe.prototype.taglibDeclaration = function(prefix, uri) {
@@ -114,9 +113,9 @@ JspScript.Scribe.prototype.attrJson = function(attributes) {
   this.put('{');
   for (var i = 0; i < attributes.length; i++) {
     if (i > 0) this.put(',');
-    this.put(attributes[i].name + "");
+    this.put(attributes[i].name + "");  // todo: test stringification
     this.put(':');
-    this.put(attributes[i].value + "");
+    this.put(attributes[i].value + "");  // todo: test stringification
   }
   this.put('}');
 };
@@ -239,18 +238,18 @@ JspScript.Generator.prototype.genTextCode_ = function(text, scribe) {
 JspScript.Generator.prototype.genElementCode_ = function(el, scribe) {
   var hasChildren = el.childNodes.length > 0;
 
-  var atMatch = JspScript.Template.RE_TAG_AT.exec(el.tagName + "");
+  var atMatch = JspScript.Template.RE_TAG_AT.exec(el.tagName + ""); // todo: test stringification
   if (atMatch) {
     var op = atMatch[1];
     if (op == 'taglib') {
-      var taglibPrefix = el.getAttribute('prefix') + "";
-      var taglibUri = el.getAttribute('uri') + "";
+      var taglibPrefix = el.getAttribute('prefix') + ""; // todo: test stringification
+      var taglibUri = el.getAttribute('uri') + ""; // todo: test stringification
       scribe.taglibDeclaration(taglibPrefix, taglibUri);
     }
     return;
   }
 
-  var nsMatch = JspScript.Template.RE_TAG.exec(el.tagName + "");
+  var nsMatch = JspScript.Template.RE_TAG.exec(el.tagName + ""); // todo: test stringification
   if (nsMatch) {
     var tagPrefix = nsMatch[1];
     var tagName = nsMatch[2];
