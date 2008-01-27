@@ -17,6 +17,18 @@ JspScript.Env.JSP_TAGS = {
   }
 };
 
+JspScript.Env.prototype.locateTemplate = function(uri) {
+  return this.createTemplateFromUrl(uri);
+};
+
+JspScript.Env.prototype.render = function(uri, attrs, parentNode) {
+  var template = this.locateTemplate(uri);
+  var result = template.render(attrs);
+  for (var i = 0; i < result.length; i++) {
+    parentNode.appendChild(result[i]);
+  }
+}
+
 JspScript.Env.prototype.createTemplateFromUrl = function(url) {
   var xhrRequest;
   if (window.XMLHttpRequest) {

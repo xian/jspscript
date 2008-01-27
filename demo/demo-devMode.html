@@ -9,17 +9,11 @@
     env.registerTaglib('/WEB-INF/tags/x', {
       test: env.createTemplateFromUrl('WEB-INF/tags/x/test.tag', env)
     });
-
-    var pageTemplate = env.createTemplateFromUrl('WEB-INF/jsp/page.jsp', env);
-
-    var result = pageTemplate.render({value: 'works'});
   </script>
 </head>
 <body>
 <script type="text/javascript">
-  for (var i = 0; i < result.length; i++) {
-    document.body.appendChild(result[i]);
-  }
+  env.render('WEB-INF/jsp/page.jsp', {value: 'works'}, document.body);
 </script>
 </body>
 </html>

@@ -7,19 +7,13 @@
     var env = new JspScript.Env();
 
     env.registerTaglib('/WEB-INF/tags/x', {
-      test: new JspScript.Template(demo_2fWEB_2dINF_2ftags_2fx_2ftest_2etag, env)
+      test: env.locateTemplate('WEB-INF/tags/x/test.tag')
     });
-
-    var pageTemplate = new JspScript.Template(demo_2fWEB_2dINF_2fjsp_2fpage_2ejsp, env);
-
-    var result = pageTemplate.render({value: 'works'});
   </script>
 </head>
 <body>
 <script type="text/javascript">
-  for (var i = 0; i < result.length; i++) {
-    document.body.appendChild(result[i]);
-  }
+  env.render('WEB-INF/jsp/page.jsp', {value: 'works'}, document.body);
 </script>
 </body>
 </html>

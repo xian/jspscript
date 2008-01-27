@@ -36,6 +36,18 @@ function RhinoProcessor(outFileName) {
   this.outFile.createNewFile();
 
   this.outWriter = new java.io.PrintWriter(this.outFile);
+
+  this.emit(
+      "// Generated file -- do not edit by hand!\n" +
+      "\n" +
+      "JspScript.__GENERATED__ = {};\n" +
+      "JspScript.__GENERATED__.uriToFnMap = {};\n" +
+      "\n" +
+      "JspScript.Env.prototype.locateTemplate = function(uri) {\n" +
+      "  return new JspScript.Template(JspScript.__GENERATED__.uriToFnMap[uri], this);\n" +
+      "};\n" +
+      "\n"
+    );
 }
 
 RhinoProcessor.prototype.emit = function(script) {
@@ -69,12 +81,15 @@ RhinoProcessor.prototype.processFile = function(inFileName) {
   var fnName = (inFileName + "").replace(/([^a-zA-Z0-9])/g, function(match) {
     return "_" + match.charCodeAt(0).toString(16);
   });
-  var script = "function " + fnName + "(attrs, tagContext) {\n" + scribe.getScript() + "\n}";
+  var script = "JspScript.__GENERATED__.uriToFnMap['" + inFileName + "'] = function(attrs, tagContext) {\n" +
+               scribe.getScript() + "\n" +
+               "}\n" +
+               "\n";
 
   this.emit(script);
 };
 
-var rhinoProcessor = new RhinoProcessor('demo/generated.js');
-rhinoProcessor.processFile('demo/WEB-INF/jsp/page.jsp');
-rhinoProcessor.processFile('demo/WEB-INF/tags/x/test.tag');
+var rhinoProcessor = new RhinoProcessor('generated.js');
+rhinoProcessor.processFile('WEB-INF/jsp/page.jsp');
+rhinoProcessor.processFile('WEB-INF/tags/x/test.tag');
 rhinoProcessor.close();

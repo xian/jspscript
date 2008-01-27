@@ -1,6 +1,8 @@
 #!/bin/bash
 
-baseDir=.
+cd demo
+
+baseDir=..
 
 java -jar $baseDir/lib/js.jar -strict -w \
 	-f $baseDir/src/JspScript.js \
