@@ -127,10 +127,20 @@ JspScript.Scribe.prototype.jspTagCall = function(tagName, attributes) {
 };
 
 JspScript.Scribe.prototype.tagStart = function(prefix, name, attributes) {
-  if (prefix == 'jsp' && name == 'doBody') {
-    this.put('e(tagContext.renderBody(null, attrs));\n');
-    this.noClose = true;
-    return;
+  if (prefix == 'jsp') {
+    if (name == 'doBody') {
+      this.put('e(tagContext.renderBody(null, attrs));\n');
+      this.noClose = true;
+      return;
+    } else if (name == 'include') {
+      this.put('this.env_.render(');
+      this.attrJson(attributes);
+      this.put('.page, attrs, parent);\n');
+      this.noClose = true;
+      return;
+    } else {
+      throw new Error('unknown or unsupported tag <jsp:' + name + '/>');
+    }
   }
 
   this.put('n(\'' + JspScript.jsEsc(prefix) + '\',\'' + JspScript.jsEsc(name) + '\', ');
@@ -138,9 +148,9 @@ JspScript.Scribe.prototype.tagStart = function(prefix, name, attributes) {
   this.put(', function(g, tagContext) {\n');
 
 //  this.put('this.doTag_(\'' + JspScript.jsEsc(prefix) + '\',\'' + JspScript.jsEsc(name) + '\', ');
-//  this.attrJson(attributes);
-//  this.put(', parent,\n' +
-//      'new JspScript.TagContext(this, function(g, tagContext) {');
+  //  this.attrJson(attributes);
+  //  this.put(', parent,\n' +
+  //      'new JspScript.TagContext(this, function(g, tagContext) {');
 };
 
 JspScript.Scribe.prototype.tagEnd = function() {

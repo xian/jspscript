@@ -1,0 +1,3 @@
+<%@ taglib prefix="x" tagdir="/WEB-INF/tags/x" %>
+
+attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>

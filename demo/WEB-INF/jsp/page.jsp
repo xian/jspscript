@@ -11,12 +11,14 @@
 </head>
 <body>
 
+<h1>JSPscript examples</h1>
+
 <div class="example">
   <div class="sample">
     attr from outside \${value}, &lt;x:test tagValue="also"&gt;inside a tag body it \${value} \${tagValue}!&lt;/x:test&gt;
   </div>
   <div class="output">
-    attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>
+    <jsp:include page="WEB-INF/jsp/attributes.jspf"/>
   </div>
 </div>
 

@@ -205,10 +205,9 @@
     }
   }
 
-  function TODO_testUnknownJspTagError() {
-    var template = env.createTemplateFromString('<jsp:xxx/>');
-
+  function testUnknownJspTagError() {
     try {
+      var template = env.createTemplateFromString('<jsp:xxx/>');
       template.render();
     } catch(e) {
       assertContains('unknown or unsupported tag <jsp:xxx/>', e.toString());

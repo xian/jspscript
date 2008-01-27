@@ -155,11 +155,10 @@
 
     var script = spyScribe.getScript();
     var fn = new Function('attrs', 'tagContext', script);
-    console.log("testJspDoBodyCall_Scribe", fn.toString());
     var template = new JspScript.Template(fn, env);
 
     var bodyFnCalled = false;
-    var bodyFunction = function(g, tagContext){
+    var bodyFunction = function(g, tagContext) {
       bodyFnCalled = true;
       assertEquals('outerValue', g('outer'));
       assertEquals('innerValue', g('inner'));
@@ -170,6 +169,36 @@
     assertText("value from bodyFunction",
         template.renderTag_({inner: 'innerValue', override: 'from inner'}, null, tagContext));
     assertTrue(bodyFnCalled);
+  }
+
+  function testJspIncludeCall_Scribe() {
+//        '<jsp:doBody/>'
+
+    spyScribe.prolog();
+
+    out = '';
+    spyScribe.tagStart('jsp', 'include', [{name: 'page', value: '\'xxx\''}], generator);
+    spyScribe.tagEnd();
+
+    assertEquals(
+        "this.env_.render({page:'xxx'}.page, attrs, parent);\n", out);
+
+    spyScribe.epilog();
+
+    var script = spyScribe.getScript();
+    var fn = new Function('attrs', 'tagContext', script);
+    var template = new JspScript.Template(fn, env);
+
+    var renderFnCalled = false;
+    env.render = function(uri, attrs, parent) {
+      renderFnCalled = true;
+      assertEquals('xxx', uri);
+      assertHashEquals({the:'hash'}, attrs);
+      parent.appendChild(document.createTextNode("value from include"));
+    };
+    console.log("testJspDoBodyCall_Scribe", fn.toString());
+    assertText('value from include', template.render({the:'hash'}));
+    assertTrue(renderFnCalled);
   }
 
   function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Generator() {
