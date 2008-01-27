@@ -1,4 +1,4 @@
-<%@ taglib prefix="x" uri="http://xxx/xxx" %>
+<%@ taglib prefix="x" tagdir="/WEB-INF/tags/x" %>
 <html>
 <head>
   <title>JSPscript Demo</title>

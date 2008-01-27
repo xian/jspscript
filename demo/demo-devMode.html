@@ -6,11 +6,11 @@
   <script type="text/javascript">
     var env = new JspScript.Env();
 
-    env.registerTaglib('http://xxx/xxx', {
-      test: env.createTemplateFromUrl('test.tag', env)
+    env.registerTaglib('/WEB-INF/tags/x', {
+      test: env.createTemplateFromUrl('WEB-INF/tags/x/test.tag', env)
     });
 
-    var pageTemplate = env.createTemplateFromUrl('page.jsp', env);
+    var pageTemplate = env.createTemplateFromUrl('WEB-INF/jsp/page.jsp', env);
 
     var result = pageTemplate.render({value: 'works'});
   </script>

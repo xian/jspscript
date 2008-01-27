@@ -246,9 +246,14 @@ JspScript.Generator.prototype.genElementCode_ = function(el, scribe) {
   if (atMatch) {
     var op = atMatch[1];
     if (op == 'taglib') {
-      var taglibPrefix = el.getAttribute('prefix') + ""; // todo: test stringification
-      var taglibUri = el.getAttribute('uri') + ""; // todo: test stringification
-      scribe.taglibDeclaration(taglibPrefix, taglibUri);
+      var taglibPrefix = el.getAttribute('prefix');
+      var taglibUri;
+      if (el.hasAttribute('uri')) {
+        taglibUri = el.getAttribute('uri');
+      } else {
+        taglibUri = el.getAttribute('tagdir');
+      }
+      scribe.taglibDeclaration(taglibPrefix + "", taglibUri + ""); // todo: test stringification
     }
     return;
   }

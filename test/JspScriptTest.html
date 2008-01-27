@@ -137,9 +137,18 @@
     assertNodes(['\n', '<P>'], template.render({num: 1, hide: true}));
   }
 
-  function testTaglibTagInclusion() {
+  function testUrlStyleTaglibTagInclusion() {
     var template = env.createTemplateFromString('<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test/>');
     env.registerTaglib('http://xxx/xxx', {
+      test: env.createTemplateFromString('hello!')
+    });
+
+    assertNodes(['hello!'], template.render());
+  }
+
+  function testTagdirStyleTaglibTagInclusion() {
+    var template = env.createTemplateFromString('<%@ taglib prefix="x" tagdir="/WEB-INF/tags/x" %><x:test/>');
+    env.registerTaglib('/WEB-INF/tags/x', {
       test: env.createTemplateFromString('hello!')
     });
 

@@ -66,13 +66,15 @@ RhinoProcessor.prototype.processFile = function(inFileName) {
   var scribe = new JspScript.Scribe();
   generator.generateFunctionBody(sourceDom.childNodes, scribe);
 
-  var fnName = (inFileName + "").replace(/\./g, '_').replace(/\//g, '__');
+  var fnName = (inFileName + "").replace(/([^a-zA-Z0-9])/g, function(match) {
+    return "_" + match.charCodeAt(0).toString(16);
+  });
   var script = "function " + fnName + "(attrs, tagContext) {\n" + scribe.getScript() + "\n}";
 
   this.emit(script);
 };
 
 var rhinoProcessor = new RhinoProcessor('demo/generated.js');
-rhinoProcessor.processFile('demo/page.jsp');
-rhinoProcessor.processFile('demo/test.tag');
+rhinoProcessor.processFile('demo/WEB-INF/jsp/page.jsp');
+rhinoProcessor.processFile('demo/WEB-INF/tags/x/test.tag');
 rhinoProcessor.close();
