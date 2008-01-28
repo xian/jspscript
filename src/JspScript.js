@@ -76,61 +76,87 @@ JspScript.Env.prototype.createDomFromString = function(string) {
 }
 
 
-JspScript.Env.prototype.registerTaglib = function(url, taglib) {
+JspScript.Env.prototype.registerTaglib = function(url, tags, fns) {
+  var taglib = {};
+  taglib.tags = tags;
+  taglib.fns = fns || {};
   this.taglibs_[url] = taglib;
 };
 
-JspScript.Env.prototype.getTagTemplate = function(url, tagName) {
+JspScript.Env.prototype.getTaglib_ = function(url) {
   var taglib = this.taglibs_[url];
   if (!taglib) {
     throw new Error('unknown taglib "' + url + '"');
   }
-  var tagTemplate = taglib[tagName];
+  return taglib;
+};
+
+JspScript.Env.prototype.getTagTemplate = function(url, tagName) {
+  var taglib = this.getTaglib_(url);
+  var tagTemplate = taglib.tags[tagName];
   if (!tagTemplate) {
     throw new Error('unknown or unsupported tag <' + url + ':' + name + '/>');
   }
   return tagTemplate;
 };
 
+JspScript.Env.prototype.getTaglibFunction = function(url, functionName) {
+  var taglib = this.getTaglib_(url);
+  var fn = taglib.fns[functionName];
+  if (!fn) {
+    throw new Error('unknown or unsupported function <' + url + ':' + name + '/>');
+  }
+  return fn;
+};
+
 JspScript.Env.RE_START_SYMBOL_CHAR = /[a-zA-Z_$]/;
-JspScript.Env.RE_SYMBOL_CHAR = /[a-zA-Z0-9_$:]/;
+JspScript.Env.RE_SYMBOL_CHAR = /[a-zA-Z0-9_$]/;
 JspScript.Env.RE_CARRYON_CHAR = /[.a-zA-Z0-9_$]/;
 
 JspScript.Env.prototype.translateExpression = function(expression) {
   var out = '';
-  var state = 0;
-  for (var c = 0; c < expression.length; c++) {
-    var cur = expression[c];
-    var until = '';
+  var gChar;
 
-//    console.log(state, cur, out);
+  var state = 0;
+  var until = '';
+
+  for (var i = 0; i < expression.length; i++) {
+    var c = expression[i];
+
+//    console.log('tX', state, c, out, until == '' ? '' : 'until==' + until);
 
     switch (state) {
       case 0: // outside of symbol
-        if (cur.match(JspScript.Env.RE_START_SYMBOL_CHAR)) {
+        if (c.match(JspScript.Env.RE_START_SYMBOL_CHAR)) {
+          gChar = out.length;
           out += 'g(\'';
           state = 1;
-        } else if (cur == '"' || cur == '\'') {
-          until = cur;
+        } else if (c == '"' || c == '\'') {
+          until = c;
           state = 4;
         }
         break;
 
       case 1: // inside of dereferenced symbol
-        if (!cur.match(JspScript.Env.RE_SYMBOL_CHAR)) {
-          out += '\')';
+        if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
 
-          if (cur == '.') {
+          if (c == '.') {
+            out += '\')';
             state = 2;
+          } else if (c == ':') {
+            // ugly...
+            out = out.substring(0, gChar) + 'f' + out.substring(gChar + 1);
+            c = '\',\'';
           } else {
+            out += '\')';
             state = 0;
           }
         }
         break;
 
       case 2: // after dereferenced or literal symbol
-        if (!cur.match(JspScript.Env.RE_SYMBOL_CHAR)) {
-          if (cur == '[') {
+        if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
+          if (c == '[') {
             state = 0;
           } else {
             state = 3;
@@ -139,15 +165,15 @@ JspScript.Env.prototype.translateExpression = function(expression) {
         break;
 
       case 3:
-        if (!cur.match(JspScript.Env.RE_SYMBOL_CHAR)) {
+        if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
           state = 0;
         }
         break;
 
       case 4: // inside quoted literal
-        if (cur == '\\') {
+        if (c == '\\') {
           state = 5;
-        } else if (cur == until) {
+        } else if (c == until) {
           state = 0;
         }
         break;
@@ -157,12 +183,14 @@ JspScript.Env.prototype.translateExpression = function(expression) {
         break;
     }
 
-    out += cur;
+    out += c;
   }
 
   if (state == 1) {
     out += '\')';
   }
+
+//  console.log('tX', out);
 
   return out;
 };
@@ -249,6 +277,15 @@ JspScript.Template.prototype.doTag_ = function(prefix, name, jspTagAttrs, parent
   var contents = tagTemplate.renderTag_(jspTagAttrs, parent, tagContext);
 //  console.log("tagTemplate.renderTag_ returns:", contents);
   return contents;
+}
+
+
+JspScript.Template.prototype.findFunction_ = function(prefix, name) {
+  var taglibUrl = this.taglibPrefixes_[prefix];
+  if (!taglibUrl) {
+    throw new Error('unknown taglib prefix "' + prefix + '"');
+  }
+  return this.env_.getTaglibFunction(taglibUrl, name);
 }
 
 

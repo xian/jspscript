@@ -69,6 +69,9 @@ JspScript.Scribe.prototype.prolog = function() {
       + '}\n'
       + 'function g(t) {\n'
       + '  return attrs[t];\n'
+      + '}\n'
+      + 'function f(prefix,name) {\n'
+      + '  return template.findFunction_(prefix,name);\n'
       + '}\n');
 };
 

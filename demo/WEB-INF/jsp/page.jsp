@@ -1,4 +1,5 @@
 <%@ taglib prefix="x" tagdir="/WEB-INF/tags/x" %>
+<%@ taglib prefix="xfns" uri="http://jspscript.sourceforge.net/demo/xfns/1.0" %>
 <html>
 <head>
   <title>JSPscript Demo</title>
@@ -15,7 +16,7 @@
 
 <div class="example">
   <div class="sample">
-    attr from outside \${value}, &lt;x:test tagValue="also"&gt;inside a tag body it \${value} \${tagValue}!&lt;/x:test&gt;
+    <pre>${xfns:includeUrlText('WEB-INF/jsp/attributes.jspf')}</pre>
   </div>
   <div class="output">
     <jsp:include page="WEB-INF/jsp/attributes.jspf"/>

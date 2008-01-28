@@ -264,6 +264,12 @@
     assertEquals('42.42',
         env.translateExpression('42.42'));
 
+    assertEquals('-42.42',
+        env.translateExpression('-42.42'));
+
+    assertEquals('(19 + 2) * 2',
+        env.translateExpression('(19 + 2) * 2'));
+
     assertEquals('"literal" + \'string\'',
         env.translateExpression('"literal" + \'string\''));
 
@@ -284,13 +290,47 @@
 
     assertEquals('g(\'symbol\').length()',
         env.translateExpression('symbol.length()'));
-
-    assertEquals('g(\'xxx:length\')(g(\'symbol\'))',
-        env.translateExpression('xxx:length(symbol)'));
-
-    assertEquals('g(\'xxx:length\')("literal")',
-        env.translateExpression('xxx:length("literal")'));
   }
+
+  function testTranslateExpression_Escaping() {
+    var translation = env.translateExpression('\'"no!" he said, \' + "\\"you just can\'t stop the music!\\""');
+    assertEquals('\'"no!" he said, \' + "\\"you just can\'t stop the music!\\""',
+        translation);
+    assertEquals('"no!" he said, "you just can\'t stop the music!"', eval(translation));
+    // (nobody can)
+  }
+
+  function testTranslateExpression_Functions() {
+    assertEquals('f(\'fn\',\'length\')(g(\'symbol\'))',
+        env.translateExpression('fn:length(symbol)'));
+
+    assertEquals('f(\'fn\',\'length\')("literal")',
+        env.translateExpression('fn:length("literal")'));
+
+    assertEquals('f(\'xxx\',\'custom\')(\'abc\', g(\'def\'), -123.4, g(\'null\'), \'\', "")',
+        env.translateExpression('xxx:custom(\'abc\', def, -123.4, null, \'\', "")'));
+
+// todo: null should be null
+//    assertEquals('f(\'xxx\',\'custom\')(\'abc\', g(\'def\'), -123.4, null, \'\', "")',
+//        env.translateExpression('xxx:custom(\'abc\', def, -123.4, null, \'\', "")'));
+
+    assertEquals('f(\'fn\',\'length\')(f(\'fn\',\'toUpperCase\')("blah"))',
+        env.translateExpression('fn:length(fn:toUpperCase("blah"))'));
+  }
+
+  function testTaglibFunctionCalling() {
+    var template = env.createTemplateFromString(
+        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>${x:test("input value")}');
+
+    var calledWith;
+    env.registerTaglib('http://xxx/xxx', {}, {
+      test: function() { calledWith = arguments; return "return value"; }
+    });
+
+    assertText('return value', template.render({}));
+    assertHashEquals(['input value'], calledWith);
+  }
+
 
   function TODO_testBasic() {
     var sample = '<%@ page contentType="text/html;charset=UTF-8" language="javascript" %>\n' +

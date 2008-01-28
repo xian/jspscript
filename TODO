@@ -2,3 +2,14 @@
 * minify boilerplate in generated fns, maybe pass it in as args?
 * add more tests asserting java.lang.String -> JS string conversion for Rhino
 * fix <jsp:include page="xxx"/> xxx handling -- relative/absolute issues
+* what's up with fn returns?
+  * strictly (jsp convention-wise), text returned by ${fn:xxx()} should be parsed to generate DOM nodes...
+  * maybe:
+    * if dom node is returned, then appendChild() it
+    * if an array is returned, then appendChild() each item
+    * if a string is returned, DOM parse it?  infinite recursion possible though, no?
+  * probably better, but violating jsp expectations:
+    * if dom node is returned, then appendChild() it
+    * if an array is returned, then appendChild() each item
+    * if a string is returned, add it as a text node
+  * to avoid violating jsp expectations, we could use innerHTML trickery on strings?

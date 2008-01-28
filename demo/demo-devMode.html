@@ -9,6 +9,25 @@
     env.registerTaglib('/WEB-INF/tags/x', {
       test: env.createTemplateFromUrl('WEB-INF/tags/x/test.tag', env)
     });
+
+    env.registerTaglib('http://jspscript.sourceforge.net/demo/xfns/1.0', {}, {
+      includeUrlText: function(url) {
+        var xhrRequest;
+        if (window.XMLHttpRequest) {
+          xhrRequest = new XMLHttpRequest();
+        } else {
+          xhrRequest = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        if (!xhrRequest) {
+          throw new Error("can't create XHR");
+        }
+
+        xhrRequest.open("GET", url, false);
+        xhrRequest.send(null);
+        return document.createTextNode(xhrRequest.responseText);
+      }
+    });
+
   </script>
 </head>
 <body>

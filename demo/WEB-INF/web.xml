@@ -4,5 +4,10 @@
            xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
 		  http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
            version="2.5">
-
+<jsp-config>
+  <taglib>
+    <taglib-uri>xfns</taglib-uri>
+    <taglib-location>/WEB-INF/xfns.tld</taglib-location>
+  </taglib>
+</jsp-config>
 </web-app>
