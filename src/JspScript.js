@@ -76,33 +76,43 @@ JspScript.Env.prototype.createDomFromString = function(string) {
 }
 
 
-JspScript.Env.prototype.registerTaglib = function(url, tags, fns) {
-  var taglib = {};
-  taglib.tags = tags;
-  taglib.fns = fns || {};
-  this.taglibs_[url] = taglib;
+JspScript.TagLib = function(opt_tags, opt_functions) {
+  this.tags_ = opt_tags || {};
+  this.functions_ = opt_functions || {};
+}
+
+JspScript.TagLib.prototype.getTag = function(name) {
+  return this.tags_[name];
+}
+
+JspScript.TagLib.prototype.getFunction = function(name) {
+  return this.functions_[name];
+}
+
+JspScript.Env.prototype.registerTaglib = function(url, tagLib) {
+  this.taglibs_[url] = tagLib;
 };
 
 JspScript.Env.prototype.getTaglib_ = function(url) {
-  var taglib = this.taglibs_[url];
-  if (!taglib) {
+  var tagLib = this.taglibs_[url];
+  if (!tagLib) {
     throw new Error('unknown taglib "' + url + '"');
   }
-  return taglib;
+  return tagLib;
 };
 
 JspScript.Env.prototype.getTagTemplate = function(url, tagName) {
-  var taglib = this.getTaglib_(url);
-  var tagTemplate = taglib.tags[tagName];
-  if (!tagTemplate) {
+  var tagLib = this.getTaglib_(url);
+  var tag = tagLib.getTag(tagName);
+  if (!tag) {
     throw new Error('unknown or unsupported tag <' + url + ':' + name + '/>');
   }
-  return tagTemplate;
+  return tag;
 };
 
 JspScript.Env.prototype.getTaglibFunction = function(url, functionName) {
-  var taglib = this.getTaglib_(url);
-  var fn = taglib.fns[functionName];
+  var tagLib = this.getTaglib_(url);
+  var fn = tagLib.getFunction(functionName);
   if (!fn) {
     throw new Error('unknown or unsupported function <' + url + ':' + name + '/>');
   }

@@ -104,9 +104,9 @@
 
   function testTaglibTagBody_Scribe() {
 //  '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>'
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('@<jsp:doBody/>@')
-    });
+    }));
 
     spyScribe.prolog();
     spyScribe.taglibDeclaration('x', 'http://xxx/xxx');
@@ -231,9 +231,9 @@
 //        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
 //        'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
 
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('<jsp:doBody/>')
-    });
+    }));
 
     spyScribe.prolog();
     spyScribe.taglibDeclaration('x', 'http://xxx/xxx');
@@ -284,9 +284,9 @@
     var template = env.createTemplateFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
         'attr from outside ${value}, <x:test value="can be overridden">inside a tag body it ${value}</x:test>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('<jsp:doBody/>')
-    });
+    }));
 
 //    assertNodes(['attr from outside works, ', 'inside a tag body it can be overridden'], template.render({value: 'works'}));
     assertNodes(['attr from outside ', 'works', ', ', 'inside a tag body it ', 'can be overridden'],

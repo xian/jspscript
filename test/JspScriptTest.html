@@ -139,18 +139,18 @@
 
   function testUrlStyleTaglibTagInclusion() {
     var template = env.createTemplateFromString('<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test/>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('hello!')
-    });
+    }));
 
     assertNodes(['hello!'], template.render());
   }
 
   function testTagdirStyleTaglibTagInclusion() {
     var template = env.createTemplateFromString('<%@ taglib prefix="x" tagdir="/WEB-INF/tags/x" %><x:test/>');
-    env.registerTaglib('/WEB-INF/tags/x', {
+    env.registerTaglib('/WEB-INF/tags/x', new JspScript.TagLib({
       test: env.createTemplateFromString('hello!')
-    });
+    }));
 
     assertNodes(['hello!'], template.render());
   }
@@ -158,9 +158,9 @@
   function testTaglibTagCalling() {
     var template = env.createTemplateFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test name="joe"/>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('hello ${name}!')
-    });
+    }));
 
     assertText('hello joe!', template.render());
   }
@@ -168,9 +168,9 @@
   function testTaglibTagAttrsAreEvaluated() {
     var template = env.createTemplateFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test name="joe-${other}"/>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('hello ${name}!')
-    });
+    }));
 
     assertText('hello joe-bob!', template.render({other: 'bob'}));
   }
@@ -178,9 +178,9 @@
   function testTaglibTagAttrTypeConversion() {
     var template = env.createTemplateFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test x="${items}"/>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('item count: ${x.length}')
-    });
+    }));
 
     assertText('item count: 3', template.render({items: ['joe', 'bob', 'frank']}));
   }
@@ -217,9 +217,9 @@
   function testTaglibTagBody() {
     var template = env.createTemplateFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('@<jsp:doBody/>@')
-    });
+    }));
 
     assertText('@contents@', template.render({}));
   }
@@ -228,9 +228,9 @@
     var template = env.createTemplateFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
         'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('<jsp:doBody/>')
-    });
+    }));
 
     assertText('attr from outside works, inside a tag body it works also!', template.render({value: 'works'}));
 //    assertNodes(['attr from outside ', 'works', ', ', 'inside a tag body it ', 'works', ' ', 'also', '!'],
@@ -241,9 +241,9 @@
     var template = env.createTemplateFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
         'attr from outside ${value}, <x:test value="can be overridden">inside a tag body it ${value}</x:test>');
-    env.registerTaglib('http://xxx/xxx', {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('<jsp:doBody/>')
-    });
+    }));
 
     // todo: prefer go back to this one:
 //    assertNodes(['attr from outside works, ', 'inside a tag body it can be overridden'], template.render({value: 'works'}));
@@ -323,9 +323,9 @@
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %>${x:test("input value")}');
 
     var calledWith;
-    env.registerTaglib('http://xxx/xxx', {}, {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({}, {
       test: function() { calledWith = arguments; return "return value"; }
-    });
+    }));
 
     assertText('return value', template.render({}));
     assertHashEquals(['input value'], calledWith);

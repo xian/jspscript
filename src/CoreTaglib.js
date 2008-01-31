@@ -1,5 +1,5 @@
 //noinspection ReservedWordAsName
-JspScript.Env.CoreTaglib = {
+JspScript.Env.CoreTaglib = new JspScript.TagLib({
   forEach: {
     renderTag_: function(attrs, parent, tagContext) {
       var items = attrs['items'];
@@ -41,4 +41,4 @@ JspScript.Env.CoreTaglib = {
       return [document.createTextNode(value)];
     }
   }
-}
+});
