@@ -75,20 +75,6 @@ JspScript.Env.prototype.createDomFromString = function(string) {
   return sourceDom.firstChild;
 }
 
-
-JspScript.TagLib = function(opt_tags, opt_functions) {
-  this.tags_ = opt_tags || {};
-  this.functions_ = opt_functions || {};
-}
-
-JspScript.TagLib.prototype.getTag = function(name) {
-  return this.tags_[name];
-}
-
-JspScript.TagLib.prototype.getFunction = function(name) {
-  return this.functions_[name];
-}
-
 JspScript.Env.prototype.registerTaglib = function(url, tagLib) {
   this.taglibs_[url] = tagLib;
 };
@@ -232,6 +218,20 @@ JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
   output.length = 0;
   return newOutput;
 };
+
+
+JspScript.TagLib = function(opt_tags, opt_functions) {
+  this.tags_ = opt_tags || {};
+  this.functions_ = opt_functions || {};
+}
+
+JspScript.TagLib.prototype.getTag = function(name) {
+  return this.tags_[name];
+}
+
+JspScript.TagLib.prototype.getFunction = function(name) {
+  return this.functions_[name];
+}
 
 
 JspScript.Template = function(templateFunction, env) {
