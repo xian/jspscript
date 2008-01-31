@@ -181,13 +181,13 @@
     spyScribe.tagEnd();
 
     assertEquals(
-        "this.env_.render({page:'xxx'}.page, attrs, parent);\n", out);
+        "this.doInclude_({page:'xxx'}.page, attrs, parent);\n", out);
 
     spyScribe.epilog();
 
     var script = spyScribe.getScript();
     var fn = new Function('attrs', 'tagContext', script);
-    var template = new JspScript.Template(fn, env);
+    var template = new JspScript.Template(fn, env, '.');
 
     var renderFnCalled = false;
     env.render = function(uri, attrs, parent) {

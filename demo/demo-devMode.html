@@ -7,7 +7,7 @@
     var env = new JspScript.Env();
 
     env.registerTaglib('/WEB-INF/tags/x', new JspScript.TagLib({
-      test: env.createTemplateFromUrl('WEB-INF/tags/x/test.tag', env)
+      test: env.createTemplateFromUrl('WEB-INF/tags/x/test.tag')
     }));
 
     env.registerTaglib('http://jspscript.sourceforge.net/demo/xfns/1.0', new JspScript.TagLib({}, {

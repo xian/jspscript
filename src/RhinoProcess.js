@@ -30,7 +30,7 @@ function RhinoProcessor(outFileName) {
     return documentBuilder.parse(stringReader);
   };
 
-  this.env = new JspScript.Env(domParserFunction);
+  this.env = new JspScript.Env('.', domParserFunction);
 
   this.outFile = new java.io.File(outFileName);
   this.outFile.createNewFile();
@@ -44,7 +44,7 @@ function RhinoProcessor(outFileName) {
       "JspScript.__GENERATED__.uriToFnMap = {};\n" +
       "\n" +
       "JspScript.Env.prototype.locateTemplate = function(uri) {\n" +
-      "  return new JspScript.Template(JspScript.__GENERATED__.uriToFnMap[uri], this);\n" +
+      "  return new JspScript.Template(JspScript.__GENERATED__.uriToFnMap[uri], this, uri);\n" +
       "};\n" +
       "\n"
     );

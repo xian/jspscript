@@ -19,7 +19,7 @@
     <pre>${xfns:includeUrlText('WEB-INF/jsp/attributes.jspf')}</pre>
   </div>
   <div class="output">
-    <jsp:include page="WEB-INF/jsp/attributes.jspf"/>
+    <jsp:include page="/WEB-INF/jsp/attributes.jspf"/>
   </div>
 </div>
 

@@ -136,7 +136,7 @@ JspScript.Scribe.prototype.tagStart = function(prefix, name, attributes) {
       this.noClose = true;
       return;
     } else if (name == 'include') {
-      this.put('this.env_.render(');
+      this.put('this.doInclude_(');
       this.attrJson(attributes);
       this.put('.page, attrs, parent);\n');
       this.noClose = true;

@@ -331,6 +331,36 @@
     assertHashEquals(['input value'], calledWith);
   }
 
+  function testRelativeUrls() {
+    var template = env.createTemplateFromString('', 'current/dir/thisFile.jsp');
+    assertEquals('current/dir/fileInSameDir.jsp', template.getUrl('fileInSameDir.jsp'));
+    assertEquals('current/dir/fileInSameDir.jsp', template.getUrl('./fileInSameDir.jsp'));
+    assertEquals('current/fileInSameDir.jsp', template.getUrl('./.././fileInSameDir.jsp'));
+    assertEquals('fileInSameDir.jsp', template.getUrl('./.././../../../fileInSameDir.jsp')); // todo: maybe incorrect
+    assertEquals('fileInBaseDir.jsp', template.getUrl('/fileInBaseDir.jsp'));
+    assertEquals('current/dir/some/subdir/file.jsp', template.getUrl('some/subdir/file.jsp'));
+  }
+
+  function testRelativeUrlsWithBaseDirInEnv() {
+    var env = new JspScript.Env('base/dir')
+    var template = env.createTemplateFromString('', 'base/dir/current/dir/thisFile.jsp');
+    assertEquals('base/dir/current/dir/fileInSameDir.jsp', template.getUrl('fileInSameDir.jsp'));
+    assertEquals('base/dir/current/dir/fileInSameDir.jsp', template.getUrl('./fileInSameDir.jsp'));
+    assertEquals('fileInSameDir.jsp', template.getUrl('./.././../../../fileInSameDir.jsp')); // todo: probably incorrect
+    assertEquals('base/dir/fileInBaseDir.jsp', template.getUrl('/fileInBaseDir.jsp'));
+    assertEquals('base/dir/current/dir/some/subdir/file.jsp', template.getUrl('some/subdir/file.jsp'));
+  }
+
+  function testTemplateRelativeUrls() {
+    var template = env.createTemplateFromString('<jsp:include page="anotherFile.jsp"/>', 'current/dir/thisFile.jsp');
+    var includedUrl;
+    env.createTemplateFromUrl = function(url) {
+      includedUrl = url;
+      return new JspScript.Template(function(){return [];}, env, url);
+    }
+    template.render({});
+    assertEquals('current/dir/anotherFile.jsp', includedUrl);
+  }
 
   function TODO_testBasic() {
     var sample = '<%@ page contentType="text/html;charset=UTF-8" language="javascript" %>\n' +
