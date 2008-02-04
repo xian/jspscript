@@ -342,7 +342,7 @@
   }
 
   function testRelativeUrlsWithBaseDirInEnv() {
-    var env = new JspScript.Env('base/dir')
+    var env = new JspScript.Env('base/dir');
     var template = env.createTemplateFromString('', 'base/dir/current/dir/thisFile.jsp');
     assertEquals('base/dir/current/dir/fileInSameDir.jsp', template.getUrl('fileInSameDir.jsp'));
     assertEquals('base/dir/current/dir/fileInSameDir.jsp', template.getUrl('./fileInSameDir.jsp'));
@@ -360,6 +360,23 @@
     }
     template.render({});
     assertEquals('current/dir/anotherFile.jsp', includedUrl);
+  }
+
+  function testIncludeDirectiveMakesTaglibDeclarations() {
+    env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
+      test: env.createTemplateFromString('extérieur')
+    }));
+
+    env.fetchFileContents = function(url) {
+      assertEquals('current/dir/otherFile.jspf', url);
+      return 'avant-<%@ taglib prefix="x" uri="http://xxx/xxx" %>-après';
+    }
+
+    var template = env.createTemplateFromString('before-<%@ include file="otherFile.jspf" %>-after-<x:test/>',
+        'current/dir/thisFile.jsp');
+    console.log('xXXXXXXXXXX');
+    console.log(template.templateFunction.toString());
+    assertText('before-avant--après-after-extérieur', template.render({}));
   }
 
   function TODO_testBasic() {

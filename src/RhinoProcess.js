@@ -3,7 +3,7 @@ var Node = {
   TEXT_NODE: 3
 }
 
-console = {
+var console = {
   log: function() {
     var out = 'console.log: ';
     for (var i = 0; i < arguments.length; i++) {
@@ -31,6 +31,11 @@ function RhinoProcessor(outFileName) {
   };
 
   this.env = new JspScript.Env('.', domParserFunction);
+  var self = this;
+  this.env.fetchFileContents = function(url) {
+    print('Reading file ' + url);
+    return self.readFile(url);
+  }
 
   this.outFile = new java.io.File(outFileName);
   this.outFile.createNewFile();
@@ -58,7 +63,7 @@ RhinoProcessor.prototype.close = function() {
   this.outWriter.close();
 };
 
-RhinoProcessor.prototype.processFile = function(inFileName) {
+RhinoProcessor.prototype.readFile = function(inFileName) {
   var inFile = new java.io.File(inFileName);
   var reader = new java.io.BufferedReader(new java.io.FileReader(inFile));
   var input = '';
@@ -68,15 +73,19 @@ RhinoProcessor.prototype.processFile = function(inFileName) {
     input += '\n';
   }
   reader.close();
-  print(input);
+  return input + '';
+}
+
+RhinoProcessor.prototype.processFile = function(inFileName) {
+  var input = this.readFile(inFileName);
 
 //  var template = env.createTemplateFromString(input);
 //  print(template);
 
-  var sourceDom = this.env.createDomFromString(input + "");
+  var sourceDom = this.env.createDomFromString(input);
   var generator = new JspScript.Generator(this.env);
   var scribe = new JspScript.Scribe();
-  generator.generateFunctionBody(sourceDom.childNodes, scribe);
+  generator.generateFunctionBody(sourceDom.childNodes, scribe, inFileName);
 
 //  var fnName = (inFileName + "").replace(/([^a-zA-Z0-9])/g, function(match) {
 //    return "_" + match.charCodeAt(0).toString(16);
@@ -94,7 +103,7 @@ var jspFiles = new java.io.File('WEB-INF/jsp').listFiles();
 for (var i = 0; i < jspFiles.length; i++) {
   var path = jspFiles[i].getPath();
   if (path.endsWith('.jsp') || path.endsWith('.jspf')) {
-    rhinoProcessor.processFile(path);
+    rhinoProcessor.processFile(path + '');
   }
 }
 rhinoProcessor.processFile('WEB-INF/tags/x/test.tag');

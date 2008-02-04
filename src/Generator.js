@@ -169,12 +169,19 @@ JspScript.Scribe.prototype.tagEnd = function() {
 
 JspScript.Generator = function(env) {
   this.env_ = env;
+  this.currentUrl_ = null;
 }
 
-JspScript.Generator.prototype.generateFunctionBody = function(nodes, scribe) {
-  scribe.prolog();
-  this.walkNodes_(nodes, scribe);
-  scribe.epilog();
+JspScript.Generator.prototype.generateFunctionBody = function(nodes, scribe, url) {
+  var previousUrl = this.currentUrl_;
+  this.currentUrl_ = url || null;
+  try {
+    scribe.prolog();
+    this.walkNodes_(nodes, scribe);
+    scribe.epilog();
+  } finally {
+    this.currentUrl_ = previousUrl;
+  }
 };
 
 JspScript.Generator.prototype.walkNodes_ = function(nodes, scribe) {
@@ -267,6 +274,12 @@ JspScript.Generator.prototype.genElementCode_ = function(el, scribe) {
         taglibUri = el.getAttribute('tagdir');
       }
       scribe.taglibDeclaration(taglibPrefix + "", taglibUri + ""); // todo: test stringification
+    } else if (op == 'include') {
+      var includeFile = el.getAttribute('file') + ""; // todo: test stringification
+      var url = JspScript.joinUrls(this.env_.baseUrl, this.currentUrl_, includeFile);
+      var contents = this.env_.fetchFileContents(url);
+      var dom = this.env_.createDomFromString(contents);
+      this.walkNodes_(dom.childNodes, scribe);
     }
     return;
   }

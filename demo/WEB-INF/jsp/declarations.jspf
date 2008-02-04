@@ -1,0 +1,2 @@
+<%@ taglib prefix="x" tagdir="/WEB-INF/tags/x" %>
+<%@ taglib prefix="xfns" uri="http://jspscript.sourceforge.net/demo/xfns/1.0" %>

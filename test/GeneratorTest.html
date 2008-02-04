@@ -171,34 +171,34 @@
     assertTrue(bodyFnCalled);
   }
 
-  function testJspIncludeCall_Scribe() {
-//        '<jsp:doBody/>'
+  function testJspIncludeCall_Generator() {
+    var dom = env.createDomFromString(
+        'before-<%@ include file="otherFile.jspf" %>-after-<x:test/>');
 
-    spyScribe.prolog();
+    env.fetchFileContents = function(url) {
+      assertEquals('baseUrl/otherFile.jspf', url);
+      return 'avant-<%@ taglib prefix="x" uri="http://xxx/xxx" %>-après';
+    }
 
-    out = '';
-    spyScribe.tagStart('jsp', 'include', [{name: 'page', value: '\'xxx\''}], generator);
-    spyScribe.tagEnd();
+    var spyScribe = new JsMock(JspScript.Scribe, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('text', 'before-');
+      JsMock.expect('text', 'avant-');
+      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
+      JsMock.expect('text', '-après');
+      JsMock.expect('text', '-after-');
+      JsMock.expect('tagStart', 'x', 'test', [], generator);
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
 
-    assertEquals(
-        "this.doInclude_({page:'xxx'}.page, attrs, parent);\n", out);
+    generator.generateFunctionBody(dom.childNodes, spyScribe, 'baseUrl/thisFile.jsp');
 
-    spyScribe.epilog();
+    JsMock.validate(spyScribe);
+  }
 
-    var script = spyScribe.getScript();
-    var fn = new Function('attrs', 'tagContext', script);
-    var template = new JspScript.Template(fn, env, '.');
+  function testIncludeDirective_Scribe() {
 
-    var renderFnCalled = false;
-    env.render = function(uri, attrs, parent) {
-      renderFnCalled = true;
-      assertEquals('xxx', uri);
-      assertHashEquals({the:'hash'}, attrs);
-      parent.appendChild(document.createTextNode("value from include"));
-    };
-    console.log("testJspDoBodyCall_Scribe", fn.toString());
-    assertText('value from include', template.render({the:'hash'}));
-    assertTrue(renderFnCalled);
   }
 
   function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Generator() {

@@ -1,8 +1,33 @@
-if (null) {
-  var console = { log: null, dirxml: null };
+var JspScript = {};
+
+
+JspScript.joinUrls = function(rootUrl, baseUrl, url) {
+  var base = baseUrl;
+
+  var urlParts = url.split(/\/+/);
+  if (urlParts[0] == '') {
+    base = rootUrl;
+    if (base != '.') base += '/.';
+    urlParts = urlParts.splice(1);
+  }
+
+  var outputUrlParts = base.split(/\/+/);
+  outputUrlParts.length--;
+
+  for (var i = 0; i < urlParts.length; i++) {
+    var urlPart = urlParts[i];
+    if (urlPart == '.') {
+      // skip
+    } else if (urlPart == '..') {
+      if (outputUrlParts.length) outputUrlParts.length--;
+    } else {
+      outputUrlParts.push(urlPart);
+    }
+  }
+
+  return outputUrlParts.join('/');
 }
 
-var JspScript = {}, AttrMap;
 
 JspScript.Env = function(opt_baseUrl, opt_domParserFunction) {
   this.baseUrl = opt_baseUrl || '.';
@@ -30,7 +55,7 @@ JspScript.Env.prototype.render = function(uri, attrs, parentNode) {
   }
 }
 
-JspScript.Env.prototype.createTemplateFromUrl = function(url) {
+JspScript.Env.prototype.fetchFileContents = function(url) {
   var xhrRequest;
   if (window.XMLHttpRequest) {
     xhrRequest = new XMLHttpRequest();
@@ -43,7 +68,12 @@ JspScript.Env.prototype.createTemplateFromUrl = function(url) {
 
   xhrRequest.open("GET", url, false);
   xhrRequest.send(null);
-  return this.createTemplateFromString(xhrRequest.responseText, url);
+  return xhrRequest.responseText;
+};
+
+JspScript.Env.prototype.createTemplateFromUrl = function(url) {
+  var contents = this.fetchFileContents(url);
+  return this.createTemplateFromString(contents, url);
 };
 
 JspScript.Env.prototype.createTemplateFromString = function(string, opt_url) {
@@ -54,7 +84,7 @@ JspScript.Env.prototype.createTemplateFromString = function(string, opt_url) {
 JspScript.Env.prototype.createTemplateFromDom = function(sourceDom, url) {
   var generator = new JspScript.Generator(this);
   var scribe = new JspScript.Scribe();
-  generator.generateFunctionBody(sourceDom.childNodes, scribe);
+  generator.generateFunctionBody(sourceDom.childNodes, scribe, url);
   var fn = new Function('attrs', 'tagContext', scribe.getScript());
   return new JspScript.Template(fn, this, url);
 }
@@ -92,7 +122,7 @@ JspScript.Env.prototype.getTagTemplate = function(url, tagName) {
   var tagLib = this.getTaglib_(url);
   var tag = tagLib.getTag(tagName);
   if (!tag) {
-    throw new Error('unknown or unsupported tag <' + url + ':' + name + '/>');
+    throw new Error('unknown or unsupported tag <' + url + ':' + tagName + '/>');
   }
   return tag;
 };
@@ -101,7 +131,7 @@ JspScript.Env.prototype.getTaglibFunction = function(url, functionName) {
   var tagLib = this.getTaglib_(url);
   var fn = tagLib.getFunction(functionName);
   if (!fn) {
-    throw new Error('unknown or unsupported function <' + url + ':' + name + '/>');
+    throw new Error('unknown or unsupported function <' + url + ':' + functionName + '/>');
   }
   return fn;
 };
@@ -252,21 +282,7 @@ JspScript.Template.prototype.render = function(attrs) {
 }
 
 JspScript.Template.prototype.renderTag_ = function(attrs, parent, tagContext) {
-  var output = this.templateFunction(attrs, tagContext);
-  return output;
-};
-
-JspScript.Template.prototype.walk_ = function(el, parent, attrs, tagContext) {
-  //noinspection JSUnresolvedVariable
-  switch (el.nodeType) {
-    case Node.TEXT_NODE:
-      this.handleTextNode_(el, parent, attrs);
-      break;
-
-    case Node.ELEMENT_NODE:
-      this.handleElement_(el, parent, attrs, tagContext);
-      break;
-  }
+  return this.templateFunction(attrs, tagContext);
 };
 
 JspScript.Template.prototype.doJspTag_ = function(name, jspTagAttrs, parent, attrs, tagContext) {
@@ -282,13 +298,8 @@ JspScript.Template.prototype.doTag_ = function(prefix, name, jspTagAttrs, parent
   if (!taglibUrl) {
     throw new Error('unknown taglib prefix "' + prefix + '"');
   }
-  //    console.log(nsMatch, taglibUrl, tagName);
   var tagTemplate = this.env_.getTagTemplate(taglibUrl, name);
-
-//  console.log("tagTemplate.renderTag_", jspTagAttrs, parent, tagContext);
-  var contents = tagTemplate.renderTag_(jspTagAttrs, parent, tagContext);
-//  console.log("tagTemplate.renderTag_ returns:", contents);
-  return contents;
+  return tagTemplate.renderTag_(jspTagAttrs, parent, tagContext);
 }
 
 JspScript.Template.prototype.doInclude_ = function(uri, attrs, parent) {
@@ -332,30 +343,7 @@ JspScript.Template.prototype.createTextNode_ = function(value) {
 };
 
 JspScript.Template.prototype.getUrl = function(url) {
-  var base = this.url_;
-
-  var urlParts = url.split(/\/+/);
-  if (urlParts[0] == '') {
-    base = this.env_.baseUrl;
-    if (base != '.') base += '/.';
-    urlParts = urlParts.splice(1);
-  }
-
-  var outputUrlParts = base.split(/\/+/);
-  outputUrlParts.length--;
-
-  for (var i = 0; i < urlParts.length; i++) {
-    var urlPart = urlParts[i];
-    if (urlPart == '.') {
-      // skip
-    } else if (urlPart == '..') {
-      if (outputUrlParts.length) outputUrlParts.length--;
-    } else {
-      outputUrlParts.push(urlPart);
-    }
-  }
-
-  return outputUrlParts.join('/');
+  return JspScript.joinUrls(this.env_.baseUrl, this.url_, url);
 };
 
 
