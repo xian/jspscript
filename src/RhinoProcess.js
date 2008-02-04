@@ -107,4 +107,5 @@ for (var i = 0; i < jspFiles.length; i++) {
   }
 }
 rhinoProcessor.processFile('WEB-INF/tags/x/test.tag');
+rhinoProcessor.processFile('WEB-INF/tags/x/showFile.tag');
 rhinoProcessor.close();
