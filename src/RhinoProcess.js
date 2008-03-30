@@ -98,14 +98,54 @@ RhinoProcessor.prototype.processFile = function(inFileName) {
   this.emit(script);
 };
 
-var rhinoProcessor = new RhinoProcessor('generated.js');
-var jspFiles = new java.io.File('WEB-INF/jsp').listFiles();
-for (var i = 0; i < jspFiles.length; i++) {
-  var path = jspFiles[i].getPath();
-  if (path.endsWith('.jsp') || path.endsWith('.jspf')) {
-    rhinoProcessor.processFile(path + '');
-  }
+RhinoProcessor.prototype.listFiles_ = function(path) {
+  var files = new java.io.File(path).listFiles();
+  java.util.Arrays.sort(files);
+  return files;
 }
-rhinoProcessor.processFile('WEB-INF/tags/x/test.tag');
-rhinoProcessor.processFile('WEB-INF/tags/x/showFile.tag');
+
+RhinoProcessor.prototype.processJspDir = function(jspDirPath) {
+  var jspFiles = this.listFiles_(jspDirPath);
+  for (var i = 0; i < jspFiles.length; i++) {
+    var jspFile = jspFiles[i];
+    var path = jspFile.getPath();
+    if (jspFile.isDirectory()) {
+      this.processTagLibDir(path);
+    } else if (path.endsWith('.jsp') || path.endsWith('.jspf')) {
+      this.processFile(path + '');
+    }
+  }
+};
+
+RhinoProcessor.prototype.processTagLibDir = function(tagLibDirPath) {
+  var tagFiles = this.listFiles_(tagLibDirPath);
+  for (var i = 0; i < tagFiles.length; i++) {
+    var tagFile = tagFiles[i];
+    var path = tagFile.getPath();
+    var foundAny = false;
+    if (path.endsWith('.tag')) {
+      this.processFile(path + '');
+      foundAny = true;
+    }
+
+    if (foundAny) {
+      this.emit('// taglib ' + tagLibDirPath + '\n');
+    }
+  }
+};
+
+RhinoProcessor.prototype.processWebInfDir = function(webInfDirPath) {
+  this.processJspDir(webInfDirPath + '/jsp');
+
+  var tagLibDirs = this.listFiles_(webInfDirPath + '/tags');
+  for (var i = 0; i < tagLibDirs.length; i++) {
+    var tagLibDir = tagLibDirs[i];
+    if (tagLibDir.isDirectory()) {
+      this.processTagLibDir(tagLibDir.getPath());
+    }
+  }
+};
+
+var rhinoProcessor = new RhinoProcessor('generated.js');
+rhinoProcessor.processWebInfDir('WEB-INF');
 rhinoProcessor.close();
