@@ -186,6 +186,7 @@
   }
 
   function testUnknownTaglibError() {
+    env.settings.loadResourcesDynamically = false;
     var template = env.createTemplateFromString('<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test/>');
 
     try {
@@ -377,6 +378,54 @@
     console.log('xXXXXXXXXXX');
     console.log(template.templateFunction.toString());
     assertText('before-avant--après-after-extérieur', template.render({}));
+  }
+
+  function testFetchFileContents_ShouldCacheRequests() {
+    var spyControl = new SpyControl();
+    var num = 1;
+    var fileContent;
+    env.createXhr_ = function() {
+      return spyControl.createSpy(XMLHttpRequest, 'xhr spy ' + (num++), {
+        send: function() { this.responseText = fileContent; }
+      });
+    };
+
+    fileContent = 'blah 1';
+    assertEquals('blah 1', env.fetchFileContents('testUrl'));
+
+    fileContent = 'blah 2';
+    assertEquals('blah 1', env.fetchFileContents('testUrl'));
+
+    assertArrayEquals([
+      ['xhr spy 1', 'open', 'GET', 'testUrl', false],
+      ['xhr spy 1', 'send', null]
+    ], spyControl.getLog());
+  }
+
+  function testClearUrlCache() {
+    var spyControl = new SpyControl();
+    var num = 1;
+    var fileContent;
+    env.createXhr_ = function() {
+      return spyControl.createSpy(XMLHttpRequest, 'xhr spy ' + (num++), {
+        send: function() { this.responseText = fileContent; }
+      });
+    };
+
+    fileContent = 'blah 1';
+    assertEquals('blah 1', env.fetchFileContents('testUrl'));
+
+    env.clearUrlCache();
+
+    fileContent = 'blah 2';
+    assertEquals('blah 2', env.fetchFileContents('testUrl'));
+
+    assertArrayEquals([
+      ['xhr spy 1', 'open', 'GET', 'testUrl', false],
+      ['xhr spy 1', 'send', null],
+      ['xhr spy 2', 'open', 'GET', 'testUrl', false],
+      ['xhr spy 2', 'send', null]
+    ], spyControl.getLog());
   }
 
   function TODO_testBasic() {

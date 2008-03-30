@@ -5,11 +5,7 @@
 
   <script type="text/javascript">
     var env = new JspScript.Env();
-
-    env.registerTaglib('/WEB-INF/tags/x', new JspScript.TagLib({
-      test: env.createTemplateFromUrl('WEB-INF/tags/x/test.tag'),
-      showFile: env.createTemplateFromUrl('WEB-INF/tags/x/showFile.tag')
-    }));
+    env.settings.loadResourcesDynamically = true;
 
     env.registerTaglib('http://jspscript.sourceforge.net/demo/xfns/1.0', new JspScript.TagLib({}, {
       includeUrlText: function(url) {

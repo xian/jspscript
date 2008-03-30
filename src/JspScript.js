@@ -35,6 +35,10 @@ JspScript.Env = function(opt_baseUrl, opt_domParserFunction) {
     return new DOMParser().parseFromString(text, 'application/xml');
   }
   this.taglibs_ = {};
+  this.urlCache_ = {};
+
+  this.settings = {};
+  this.settings.loadResourcesDynamically = false;
 };
 
 JspScript.Env.JSP_TAGS = {
@@ -55,7 +59,7 @@ JspScript.Env.prototype.render = function(uri, attrs, parentNode) {
   }
 }
 
-JspScript.Env.prototype.fetchFileContents = function(url) {
+JspScript.Env.prototype.createXhr_ = function() {
   var xhrRequest;
   if (window.XMLHttpRequest) {
     xhrRequest = new XMLHttpRequest();
@@ -65,10 +69,25 @@ JspScript.Env.prototype.fetchFileContents = function(url) {
   if (!xhrRequest) {
     throw new Error("can't create XHR");
   }
+  return xhrRequest;
+};
 
-  xhrRequest.open("GET", url, false);
-  xhrRequest.send(null);
-  return xhrRequest.responseText;
+JspScript.Env.prototype.clearUrlCache = function() {
+  this.urlCache_ = {};
+};
+
+JspScript.Env.prototype.fetchFileContents = function(url) {
+  var contents = this.urlCache_[url];
+
+  if (contents == null) {
+    var xhrRequest = this.createXhr_();
+    xhrRequest.open("GET", url, false);
+    xhrRequest.send(null);
+    contents = xhrRequest.responseText;
+    this.urlCache_[url] = contents;
+  }
+
+  return contents;
 };
 
 JspScript.Env.prototype.createTemplateFromUrl = function(url) {
@@ -113,7 +132,12 @@ JspScript.Env.prototype.registerTaglib = function(url, tagLib) {
 JspScript.Env.prototype.getTaglib_ = function(url) {
   var tagLib = this.taglibs_[url];
   if (!tagLib) {
-    throw new Error('unknown taglib "' + url + '"');
+    if (this.settings.loadResourcesDynamically) {
+      tagLib = new JspScript.DevTagLib(this, url);
+      this.taglibs_[url] = tagLib;
+    } else {
+      throw new Error('unknown taglib "' + url + '"');
+    }
   }
   return tagLib;
 };
@@ -254,15 +278,30 @@ JspScript.TagContext.prototype.renderBody = function(parent, extraAttrs) {
 JspScript.TagLib = function(opt_tags, opt_functions) {
   this.tags_ = opt_tags || {};
   this.functions_ = opt_functions || {};
-}
+};
 
 JspScript.TagLib.prototype.getTag = function(name) {
   return this.tags_[name];
-}
+};
 
 JspScript.TagLib.prototype.getFunction = function(name) {
   return this.functions_[name];
-}
+};
+
+
+JspScript.DevTagLib = function(env, url) {
+  this.env_ = env;
+  this.url_ = url;
+};
+
+JspScript.DevTagLib.prototype.getTag = function(name) {
+  var templateFile = this.env_.baseUrl + '/' + this.url_ + '/' + name + '.tag';
+  return this.env_.locateTemplate(templateFile);
+};
+
+JspScript.DevTagLib.prototype.getFunction = function(name) {
+  throw new Error("functions not supported here yet...");
+};
 
 
 JspScript.Template = function(templateFunction, env, url) {
