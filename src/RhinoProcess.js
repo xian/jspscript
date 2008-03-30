@@ -21,10 +21,11 @@ var console = {
 }
 
 function RhinoProcessor(outFileName) {
+  print('Generating ' + outFileName + '...');
   var documentBuilderFactory = Packages.javax.xml.parsers.DocumentBuilderFactory.newInstance();
 
   var domParserFunction = function(text) {
-    print(text);
+//    print(text);
     var documentBuilder = documentBuilderFactory.newDocumentBuilder();
     var stringReader = new java.io.ByteArrayInputStream(new java.lang.String(text).getBytes());
     return documentBuilder.parse(stringReader);
@@ -33,7 +34,7 @@ function RhinoProcessor(outFileName) {
   this.env = new JspScript.Env('.', domParserFunction);
   var self = this;
   this.env.fetchFileContents = function(url) {
-    print('Reading file ' + url);
+//    print('Reading file ' + url);
     return self.readFile(url);
   }
 
@@ -61,6 +62,7 @@ RhinoProcessor.prototype.emit = function(script) {
 
 RhinoProcessor.prototype.close = function() {
   this.outWriter.close();
+  print('Finished!');
 };
 
 RhinoProcessor.prototype.readFile = function(inFileName) {
@@ -77,6 +79,7 @@ RhinoProcessor.prototype.readFile = function(inFileName) {
 }
 
 RhinoProcessor.prototype.processFile = function(inFileName) {
+  print('  * ' + inFileName);
   var input = this.readFile(inFileName);
 
 //  var template = env.createTemplateFromString(input);
@@ -135,6 +138,8 @@ RhinoProcessor.prototype.processTagLibDir = function(tagLibDirPath) {
 };
 
 RhinoProcessor.prototype.processWebInfDir = function(webInfDirPath) {
+  print('* Processing ' + webInfDirPath + '...');
+
   this.processJspDir(webInfDirPath + '/jsp');
 
   var tagLibDirs = this.listFiles_(webInfDirPath + '/tags');
