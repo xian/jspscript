@@ -54,6 +54,10 @@ function RhinoProcessor(outFileName) {
       "};\n" +
       "\n"
     );
+
+  var scribe = new JspScript.Scribe();
+  scribe.preface();
+  this.emit(scribe.getScript());
 }
 
 RhinoProcessor.prototype.emit = function(script) {
@@ -61,6 +65,10 @@ RhinoProcessor.prototype.emit = function(script) {
 };
 
 RhinoProcessor.prototype.close = function() {
+  var scribe = new JspScript.Scribe();
+  scribe.afterward();
+  this.emit(scribe.getScript());
+
   this.outWriter.close();
   print('Finished!');
 };

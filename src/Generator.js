@@ -18,6 +18,12 @@ JspScript.Scribe.prototype.getScript = function() {
   return this.out_;
 }
 
+JspScript.Scribe.prototype.preface = function() {
+};
+
+JspScript.Scribe.prototype.afterward = function() {
+};
+
 JspScript.Scribe.prototype.prolog = function() {
   this.put(
       'var top = [];\n'

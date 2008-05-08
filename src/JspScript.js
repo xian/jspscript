@@ -164,9 +164,29 @@ JspScript.Env.RE_START_SYMBOL_CHAR = /[a-zA-Z_$]/;
 JspScript.Env.RE_SYMBOL_CHAR = /[a-zA-Z0-9_$]/;
 JspScript.Env.RE_CARRYON_CHAR = /[.a-zA-Z0-9_$]/;
 
+// todo: move to Generator.js
+ElScribe = function() {
+  this.out_ = '';
+};
+ElScribe.prototype.getScript = function() {
+  return this.out_;
+};
+ElScribe.prototype.startSymbolLookup = function() {
+  this.gChar_ = this.out_.length;
+  this.out_ += 'g(\'';
+};
+ElScribe.prototype.emitSymbol = function(symbol) {
+  this.out_ += symbol;
+};
+ElScribe.prototype.endSymbolLookup = function() {
+  this.out_ += '\')';
+};
+ElScribe.prototype.lookupCurrentSymbolAsFunction = function() {
+  this.out_ = this.out_.substring(0, this.gChar_) + 'f' + this.out_.substring(this.gChar_ + 1);
+};
+
 JspScript.Env.prototype.translateExpression = function(expression) {
-  var out = '';
-  var gChar;
+  var scribe = new ElScribe();
 
   var state = 0;
   var until = '';
@@ -179,8 +199,7 @@ JspScript.Env.prototype.translateExpression = function(expression) {
     switch (state) {
       case 0: // outside of symbol
         if (c.match(JspScript.Env.RE_START_SYMBOL_CHAR)) {
-          gChar = out.length;
-          out += 'g(\'';
+          scribe.startSymbolLookup();
           state = 1;
         } else if (c == '"' || c == '\'') {
           until = c;
@@ -192,14 +211,14 @@ JspScript.Env.prototype.translateExpression = function(expression) {
         if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
 
           if (c == '.') {
-            out += '\')';
+            scribe.endSymbolLookup();
             state = 2;
           } else if (c == ':') {
             // ugly...
-            out = out.substring(0, gChar) + 'f' + out.substring(gChar + 1);
+            scribe.lookupCurrentSymbolAsFunction();
             c = '\',\'';
           } else {
-            out += '\')';
+            scribe.endSymbolLookup();
             state = 0;
           }
         }
@@ -234,23 +253,17 @@ JspScript.Env.prototype.translateExpression = function(expression) {
         break;
     }
 
-    out += c;
+    scribe.emitSymbol(c);
   }
 
   if (state == 1) {
-    out += '\')';
+    scribe.endSymbolLookup();
   }
 
 //  console.log('tX', out);
 
-  return out;
+  return scribe.getScript();
 };
-
-JspScript.Env.prototype.compileExpression = function(expression) {
-  var translatedExpression = this.translateExpression(expression);
-  return new Function('g', 'return (' + translatedExpression + ')');
-};
-
 
 JspScript.TagContext = function(template, bodyFunction, attrs) {
   this.template = template;
@@ -356,23 +369,6 @@ JspScript.Template.prototype.findFunction_ = function(prefix, name) {
 }
 
 
-JspScript.Template.prototype.eval_ = function(expr, attrs) {
-  var fn = this.env_.compileExpression(expr);
-
-  var getAttr = function(name) {
-    if (attrs instanceof Array) {
-      for (var i = 0; i < attrs.length; i++) {
-        if (name in attrs[i]) return attrs[i][name];
-      }
-      return null;
-    } else {
-      return attrs[name];
-    }
-  };
-
-  return fn(getAttr);
-};
-
 JspScript.Template.prototype.createElement_ = function(tagName) {
   return document.createElement(tagName);
 };
@@ -383,65 +379,4 @@ JspScript.Template.prototype.createTextNode_ = function(value) {
 
 JspScript.Template.prototype.getUrl = function(url) {
   return JspScript.joinUrls(this.env_.baseUrl, this.url_, url);
-};
-
-
-/**
- * Create a new Document object. If no arguments are specified,
- * the document will be empty. If a root tag is specified, the document
- * will contain that single root tag. If the root tag has a namespace
- * prefix, the second argument must specify the URL that identifies the
- * namespace.
- */
-XML.newDocument = function(rootTagName, namespaceURL) {
-  if (!rootTagName) rootTagName = "";
-  if (!namespaceURL) namespaceURL = "";
-  if (document.implementation && document.implementation.createDocument) {
-    // This is the W3C standard way to do it
-    return document.implementation.createDocument(namespaceURL, rootTagName, null);
-  }
-  else { // This is the IE way to do it
-    // Create an empty document as an ActiveX object
-    // If there is no root element, this is all we have to do
-    var doc = new ActiveXObject("MSXML2.DOMDocument");
-    // If there is a root tag, initialize the document
-    if (rootTagName) {
-      // Look for a namespace prefix
-      var prefix = "";
-      var tagname = rootTagName;
-      var p = rootTagName.indexOf(':');
-      if (p != -1) {
-        prefix = rootTagName.substring(0, p);
-        tagname = rootTagName.substring(p+1);
-      }
-      // If we have a namespace, we must have a namespace prefix
-      // If we don't have a namespace, we discard any prefix
-      if (namespaceURL) {
-        if (!prefix) prefix = "a0"; // What Firefox uses
-      }
-      else prefix = "";
-      // Create the root element (with optional namespace) as a
-      // string of text
-      var text = "<" + (prefix?(prefix+":"):"") +  tagname +
-          (namespaceURL
-           ?(" xmlns:" + prefix + '="' + namespaceURL +'"')
-           :"") +
-          "/>";
-      // And parse that text into the empty document
-      doc.loadXML(text);
-    }
-    return doc;
-  }
-};
-
-/**
- * Synchronously load the XML document at the specified URL and
- * return it as a Document object
- */
-XML.load = function(url) {
-    // Create a new document with the previously defined function
-    var xmldoc = XML.newDocument();
-    xmldoc.async = false;  // We want to load synchronously
-    xmldoc.load(url);      // Load and parse
-    return xmldoc;         // Return the document
 };
