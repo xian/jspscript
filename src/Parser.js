@@ -138,6 +138,7 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
 
 JspScript.Parser.prototype.translateExpression = function(expression) {
   var elExpr = this.parseExpression(expression);
+  console.log(elExpr.tokens);
 
   var script = '';
   for (var i = 0; i < elExpr.tokens.length; i++) {
@@ -147,7 +148,7 @@ JspScript.Parser.prototype.translateExpression = function(expression) {
         script += 'g(\'' + token.value + '\')';
         break;
       case JspScript.Parser.ElExpression.FUNCTION_LOOKUP:
-        script += 'f(\'' + token.value + '\')';
+        script += 'f(\'' + token.taglibNs + '\',\'' + token.value + '\')';
         break;
       case JspScript.Parser.ElExpression.JS_CODE_LITERAL:
         script += token.value;
@@ -212,7 +213,9 @@ JspScript.Parser.prototype.parseExpression = function(expression) {
             state = 2;
           } else if (c == ':') {
             currentToken.type = JspScript.Parser.ElExpression.FUNCTION_LOOKUP;
-            c = '\',\'';
+            currentToken.taglibNs = currentToken.value;
+            currentToken.value = '';
+            c = '';
           } else {
             elExpr.addToken(currentToken);
             currentToken = new JspScript.Parser.Token(JspScript.Parser.ElExpression.JS_CODE_LITERAL);
