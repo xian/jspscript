@@ -15,7 +15,7 @@
 <script type="text/javascript">
 
   var env;
-  var spyScribe;
+  var spyGenerator;
   var parser;
   var out;
 
@@ -23,11 +23,11 @@
     env = new JspScript.Env();
     parser = new JspScript.Parser(env);
 
-    spyScribe = new JspScript.Scribe();
+    spyGenerator = new JspScript.Generator();
     out = '';
-    spyScribe.oldPut = spyScribe.put;
-    spyScribe.put = function(str) {
-      out += str; spyScribe.oldPut(str);
+    spyGenerator.oldPut = spyGenerator.put;
+    spyGenerator.put = function(str) {
+      out += str; spyGenerator.oldPut(str);
     }
   }
 
@@ -35,7 +35,7 @@
     var dom = env.createDomFromString(
         '<html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>');
 
-    var spyScribe = new JsMock(JspScript.Scribe, function() {
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
       JsMock.expect('prolog');
       JsMock.expect('element', 'html', [], true);
       JsMock.expect('element', 'body', [], true);
@@ -48,30 +48,30 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
 
-    JsMock.validate(spyScribe);
+    JsMock.validate(spyGenerator);
   }
 
-  function testSimpleDomGeneration_Scribe() {
+  function testSimpleDomGeneration_Generator() {
     // <html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>
 
-    spyScribe.prolog();
-    spyScribe.element('html', [], true);
-    spyScribe.element('body', [], true);
+    spyGenerator.prolog();
+    spyGenerator.element('html', [], true);
+    spyGenerator.element('body', [], true);
 
     out = '';
-    spyScribe.element('h2', [{name: 'id', value: '\'header\''}], true);
+    spyGenerator.element('h2', [{name: 'id', value: '\'header\''}], true);
     assertEquals("q('h2','id','header');\n", out);
 
-    spyScribe.text('Hello World!');
-    spyScribe.pop();
-    spyScribe.text('More text...\n');
-    spyScribe.pop();
-    spyScribe.pop();
-    spyScribe.epilog();
+    spyGenerator.text('Hello World!');
+    spyGenerator.pop();
+    spyGenerator.text('More text...\n');
+    spyGenerator.pop();
+    spyGenerator.pop();
+    spyGenerator.epilog();
 
-    var script = spyScribe.getScript();
+    var script = spyGenerator.getScript();
     console.log(script);
     var fn = new Function('attrs', script)
     var rendered = fn({});
@@ -89,7 +89,7 @@
     var dom = env.createDomFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>');
 
-    var spyScribe = new JsMock(JspScript.Scribe, function() {
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
       JsMock.expect('prolog');
       JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
       JsMock.expect('tagStart', 'x', 'test', [], parser);
@@ -98,26 +98,26 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
 
-    JsMock.validate(spyScribe);
+    JsMock.validate(spyGenerator);
   }
 
-  function testTaglibTagBody_Scribe() {
+  function testTaglibTagBody_Generator() {
 //  '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>'
     env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
       test: env.createTemplateFromString('@<jsp:doBody/>@')
     }));
 
-    spyScribe.prolog();
-    spyScribe.taglibDeclaration('x', 'http://xxx/xxx');
+    spyGenerator.prolog();
+    spyGenerator.taglibDeclaration('x', 'http://xxx/xxx');
     out = '';
-    spyScribe.tagStart('x', 'test', [], parser);
-    spyScribe.text('contents');
-    spyScribe.tagEnd();
-    spyScribe.epilog();
+    spyGenerator.tagStart('x', 'test', [], parser);
+    spyGenerator.text('contents');
+    spyGenerator.tagEnd();
+    spyGenerator.epilog();
 
-    var script = spyScribe.getScript();
+    var script = spyGenerator.getScript();
     console.log(script);
     var fn = new Function('attrs', script)
     var template = new JspScript.Template(fn, env);
@@ -128,33 +128,33 @@
     var dom = env.createDomFromString(
         '<jsp:doBody/>');
 
-    var spyScribe = new JsMock(JspScript.Scribe, function() {
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
       JsMock.expect('prolog');
       JsMock.expect('tagStart', 'jsp', 'doBody', [], parser);
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
 
-    JsMock.validate(spyScribe);
+    JsMock.validate(spyGenerator);
   }
 
-  function testJspDoBodyCall_Scribe() {
+  function testJspDoBodyCall_Generator() {
 //        '<jsp:doBody/>'
 
-    spyScribe.prolog();
+    spyGenerator.prolog();
 
     out = '';
-    spyScribe.tagStart('jsp', 'doBody', [], parser);
-    spyScribe.tagEnd();
+    spyGenerator.tagStart('jsp', 'doBody', [], parser);
+    spyGenerator.tagEnd();
 
     assertEquals(
         "e(tagContext.renderBody(null, attrs));\n", out);
 
-    spyScribe.epilog();
+    spyGenerator.epilog();
 
-    var script = spyScribe.getScript();
+    var script = spyGenerator.getScript();
     var fn = new Function('attrs', 'tagContext', script);
     var template = new JspScript.Template(fn, env);
 
@@ -181,7 +181,7 @@
       return 'avant-<%@ taglib prefix="x" uri="http://xxx/xxx" %>-après';
     }
 
-    var spyScribe = new JsMock(JspScript.Scribe, function() {
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
       JsMock.expect('prolog');
       JsMock.expect('text', 'before-');
       JsMock.expect('text', 'avant-');
@@ -193,12 +193,12 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyScribe, 'baseUrl/thisFile.jsp');
+    parser.parseFunctionBody(dom.childNodes, spyGenerator, 'baseUrl/thisFile.jsp');
 
-    JsMock.validate(spyScribe);
+    JsMock.validate(spyGenerator);
   }
 
-  function testIncludeDirective_Scribe() {
+  function testIncludeDirective_Generator() {
 
   }
 
@@ -207,7 +207,7 @@
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
         'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
 
-    var spyScribe = new JsMock(JspScript.Scribe, function() {
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
       JsMock.expect('prolog');
       JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
       JsMock.expect('text', 'attr from outside ');
@@ -223,12 +223,12 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
 
-    JsMock.validate(spyScribe);
+    JsMock.validate(spyGenerator);
   }
 
-  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Scribe() {
+  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Generator() {
 //        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
 //        'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
 
@@ -236,20 +236,20 @@
       test: env.createTemplateFromString('<jsp:doBody/>')
     }));
 
-    spyScribe.prolog();
-    spyScribe.taglibDeclaration('x', 'http://xxx/xxx');
-    spyScribe.text('attr from outside ');
-    spyScribe.expression('g(\'value\')');
-    spyScribe.text(', ');
+    spyGenerator.prolog();
+    spyGenerator.taglibDeclaration('x', 'http://xxx/xxx');
+    spyGenerator.text('attr from outside ');
+    spyGenerator.expression('g(\'value\')');
+    spyGenerator.text(', ');
 
     out = '';
-    spyScribe.tagStart('x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
-    spyScribe.text('inside a tag body it ');
-    spyScribe.expression('g(\'value\')');
-    spyScribe.text(' ');
-    spyScribe.expression('g(\'tagValue\')');
-    spyScribe.text('!');
-    spyScribe.tagEnd();
+    spyGenerator.tagStart('x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
+    spyGenerator.text('inside a tag body it ');
+    spyGenerator.expression('g(\'value\')');
+    spyGenerator.text(' ');
+    spyGenerator.expression('g(\'tagValue\')');
+    spyGenerator.text('!');
+    spyGenerator.tagEnd();
 
     assertEquals(
         "n('x','test', {tagValue:'also'}, function(g, tagContext) {\n" +
@@ -270,9 +270,9 @@
 //        "w('!');" +
 //        "}, attrs));", out);
 
-    spyScribe.epilog();
+    spyGenerator.epilog();
 
-    var script = spyScribe.getScript();
+    var script = spyGenerator.getScript();
     console.log(script);
     var fn = new Function('attrs', script);
     var template = new JspScript.Template(fn, env);

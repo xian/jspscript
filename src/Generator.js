@@ -1,30 +1,30 @@
-JspScript.Scribe = function() {
+JspScript.Generator = function() {
   this.out_ = '';
   this.noClose = false;
 }
 
-JspScript.Scribe.escRe = /(['\\])/g;
-JspScript.Scribe.newlineRe = /\n/g;
+JspScript.Generator.escRe = /(['\\])/g;
+JspScript.Generator.newlineRe = /\n/g;
 
-JspScript.Scribe.prototype.put = function(s) {
+JspScript.Generator.prototype.put = function(s) {
   this.out_ += s;
 }
 
 JspScript.jsEsc = function(s) {
-  return s.replace(JspScript.Scribe.escRe, '\\$1').replace(JspScript.Scribe.newlineRe, '\\n');
+  return s.replace(JspScript.Generator.escRe, '\\$1').replace(JspScript.Generator.newlineRe, '\\n');
 };
 
-JspScript.Scribe.prototype.getScript = function() {
+JspScript.Generator.prototype.getScript = function() {
   return this.out_;
 }
 
-JspScript.Scribe.prototype.preface = function() {
+JspScript.Generator.prototype.preface = function() {
 };
 
-JspScript.Scribe.prototype.afterward = function() {
+JspScript.Generator.prototype.afterward = function() {
 };
 
-JspScript.Scribe.prototype.prolog = function() {
+JspScript.Generator.prototype.prolog = function() {
   this.put(
       'var top = [];\n'
       + 'var stack = [];\n'
@@ -81,19 +81,19 @@ JspScript.Scribe.prototype.prolog = function() {
       + '}\n');
 };
 
-JspScript.Scribe.prototype.epilog = function() {
+JspScript.Generator.prototype.epilog = function() {
   this.put('return top;\n');
 };
 
-JspScript.Scribe.prototype.text = function(s) {
+JspScript.Generator.prototype.text = function(s) {
   this.put('w(\'' + JspScript.jsEsc(s) + '\');\n');
 };
 
-JspScript.Scribe.prototype.expression = function(s) {
+JspScript.Generator.prototype.expression = function(s) {
   this.put('x(' + s + ');\n');
 };
 
-JspScript.Scribe.prototype.element = function(tagName, attributes, hasChildren) {
+JspScript.Generator.prototype.element = function(tagName, attributes, hasChildren) {
   var attrList = '';
   for (var i = 0; i < attributes.length; i++) {
     attrList += ',\'';
@@ -106,11 +106,11 @@ JspScript.Scribe.prototype.element = function(tagName, attributes, hasChildren) 
       '(\'' + JspScript.jsEsc(tagName) + '\'' + attrList + ');\n');
 };
 
-JspScript.Scribe.prototype.pop = function() {
+JspScript.Generator.prototype.pop = function() {
   this.put('z();\n');
 };
 
-JspScript.Scribe.prototype.taglibDeclaration = function(prefix, uri) {
+JspScript.Generator.prototype.taglibDeclaration = function(prefix, uri) {
 //  if (!this.haveTaglibPrefixes_) {
 //    this.haveTaglibPrefixes_ = true;
 //    this.put('this.taglibPrefixes_ = {};');
@@ -118,7 +118,7 @@ JspScript.Scribe.prototype.taglibDeclaration = function(prefix, uri) {
   this.put('this.taglibPrefixes_[\'' + JspScript.jsEsc(prefix) + '\'] = \'' + JspScript.jsEsc(uri) + '\';\n');
 };
 
-JspScript.Scribe.prototype.attrJson = function(attributes) {
+JspScript.Generator.prototype.attrJson = function(attributes) {
   this.put('{');
   for (var i = 0; i < attributes.length; i++) {
     if (i > 0) this.put(',');
@@ -129,13 +129,13 @@ JspScript.Scribe.prototype.attrJson = function(attributes) {
   this.put('}');
 };
 
-JspScript.Scribe.prototype.jspTagCall = function(tagName, attributes) {
+JspScript.Generator.prototype.jspTagCall = function(tagName, attributes) {
   this.put('this.doJspTag_(\'' + JspScript.jsEsc(tagName) + '\', ');
   this.attrJson(attributes);
   this.put(', parent, attrs, tagContext);\n');
 };
 
-JspScript.Scribe.prototype.tagStart = function(prefix, name, attributes) {
+JspScript.Generator.prototype.tagStart = function(prefix, name, attributes) {
   if (prefix == 'jsp') {
     if (name == 'doBody') {
       this.put('e(tagContext.renderBody(null, attrs));\n');
@@ -162,7 +162,7 @@ JspScript.Scribe.prototype.tagStart = function(prefix, name, attributes) {
   //      'new JspScript.TagContext(this, function(g, tagContext) {');
 };
 
-JspScript.Scribe.prototype.tagEnd = function() {
+JspScript.Generator.prototype.tagEnd = function() {
   if (this.noClose) {
     this.noClose = false;
     return;

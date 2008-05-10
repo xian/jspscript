@@ -55,9 +55,9 @@ function RhinoProcessor(outFileName) {
       "\n"
     );
 
-  var scribe = new JspScript.Scribe();
-  scribe.preface();
-  this.emit(scribe.getScript());
+  var generator = new JspScript.Generator();
+  generator.preface();
+  this.emit(generator.getScript());
 }
 
 RhinoProcessor.prototype.emit = function(script) {
@@ -65,9 +65,9 @@ RhinoProcessor.prototype.emit = function(script) {
 };
 
 RhinoProcessor.prototype.close = function() {
-  var scribe = new JspScript.Scribe();
-  scribe.afterward();
-  this.emit(scribe.getScript());
+  var generator = new JspScript.Generator();
+  generator.afterward();
+  this.emit(generator.getScript());
 
   this.outWriter.close();
   print('Finished!');
@@ -95,14 +95,14 @@ RhinoProcessor.prototype.processFile = function(inFileName) {
 
   var sourceDom = this.env.createDomFromString(input);
   var parser = new JspScript.Parser(this.env);
-  var scribe = new JspScript.Scribe();
-  parser.parseFunctionBody(sourceDom.childNodes, scribe, inFileName);
+  var generator = new JspScript.Generator();
+  parser.parseFunctionBody(sourceDom.childNodes, generator, inFileName);
 
 //  var fnName = (inFileName + "").replace(/([^a-zA-Z0-9])/g, function(match) {
 //    return "_" + match.charCodeAt(0).toString(16);
 //  });
   var script = "JspScript.__GENERATED__.uriToFnMap['" + inFileName + "'] = function(attrs, tagContext) {\n" +
-               scribe.getScript() + "\n" +
+               generator.getScript() + "\n" +
                "}\n" +
                "\n";
 

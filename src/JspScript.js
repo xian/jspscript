@@ -102,9 +102,9 @@ JspScript.Env.prototype.createTemplateFromString = function(string, opt_url) {
 
 JspScript.Env.prototype.createTemplateFromDom = function(sourceDom, url) {
   var parser = new JspScript.Parser(this);
-  var scribe = new JspScript.Scribe();
-  parser.parseFunctionBody(sourceDom.childNodes, scribe, url);
-  var fn = new Function('attrs', 'tagContext', scribe.getScript());
+  var generator = new JspScript.Generator();
+  parser.parseFunctionBody(sourceDom.childNodes, generator, url);
+  var fn = new Function('attrs', 'tagContext', generator.getScript());
   return new JspScript.Template(fn, this, url);
 }
 
@@ -165,28 +165,28 @@ JspScript.Env.RE_SYMBOL_CHAR = /[a-zA-Z0-9_$]/;
 JspScript.Env.RE_CARRYON_CHAR = /[.a-zA-Z0-9_$]/;
 
 // todo: move to Parser.js
-ElScribe = function() {
+ElGenerator = function() {
   this.out_ = '';
 };
-ElScribe.prototype.getScript = function() {
+ElGenerator.prototype.getScript = function() {
   return this.out_;
 };
-ElScribe.prototype.startSymbolLookup = function() {
+ElGenerator.prototype.startSymbolLookup = function() {
   this.gChar_ = this.out_.length;
   this.out_ += 'g(\'';
 };
-ElScribe.prototype.emitSymbol = function(symbol) {
+ElGenerator.prototype.emitSymbol = function(symbol) {
   this.out_ += symbol;
 };
-ElScribe.prototype.endSymbolLookup = function() {
+ElGenerator.prototype.endSymbolLookup = function() {
   this.out_ += '\')';
 };
-ElScribe.prototype.lookupCurrentSymbolAsFunction = function() {
+ElGenerator.prototype.lookupCurrentSymbolAsFunction = function() {
   this.out_ = this.out_.substring(0, this.gChar_) + 'f' + this.out_.substring(this.gChar_ + 1);
 };
 
 JspScript.Env.prototype.translateExpression = function(expression) {
-  var scribe = new ElScribe();
+  var generator = new ElGenerator();
 
   var state = 0;
   var until = '';
@@ -199,7 +199,7 @@ JspScript.Env.prototype.translateExpression = function(expression) {
     switch (state) {
       case 0: // outside of symbol
         if (c.match(JspScript.Env.RE_START_SYMBOL_CHAR)) {
-          scribe.startSymbolLookup();
+          generator.startSymbolLookup();
           state = 1;
         } else if (c == '"' || c == '\'') {
           until = c;
@@ -211,14 +211,14 @@ JspScript.Env.prototype.translateExpression = function(expression) {
         if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
 
           if (c == '.') {
-            scribe.endSymbolLookup();
+            generator.endSymbolLookup();
             state = 2;
           } else if (c == ':') {
             // ugly...
-            scribe.lookupCurrentSymbolAsFunction();
+            generator.lookupCurrentSymbolAsFunction();
             c = '\',\'';
           } else {
-            scribe.endSymbolLookup();
+            generator.endSymbolLookup();
             state = 0;
           }
         }
@@ -253,16 +253,16 @@ JspScript.Env.prototype.translateExpression = function(expression) {
         break;
     }
 
-    scribe.emitSymbol(c);
+    generator.emitSymbol(c);
   }
 
   if (state == 1) {
-    scribe.endSymbolLookup();
+    generator.endSymbolLookup();
   }
 
 //  console.log('tX', out);
 
-  return scribe.getScript();
+  return generator.getScript();
 };
 
 JspScript.TagContext = function(template, bodyFunction, attrs) {

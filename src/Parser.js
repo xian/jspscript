@@ -3,29 +3,29 @@ JspScript.Parser = function(env) {
   this.currentUrl_ = null;
 }
 
-JspScript.Parser.prototype.parseFunctionBody = function(nodes, scribe, url) {
+JspScript.Parser.prototype.parseFunctionBody = function(nodes, generator, url) {
   var previousUrl = this.currentUrl_;
   this.currentUrl_ = url || null;
   try {
-    scribe.prolog();
-    this.walkNodes_(nodes, scribe);
-    scribe.epilog();
+    generator.prolog();
+    this.walkNodes_(nodes, generator);
+    generator.epilog();
   } finally {
     this.currentUrl_ = previousUrl;
   }
 };
 
-JspScript.Parser.prototype.walkNodes_ = function(nodes, scribe) {
+JspScript.Parser.prototype.walkNodes_ = function(nodes, generator) {
   for (var i = 0; i < nodes.length; i++) {
     var node = nodes.item(i);
     //noinspection JSUnresolvedVariable
     switch (node.nodeType) {
       case Node.TEXT_NODE:
-        this.genTextCode_(node.nodeValue + "", scribe);
+        this.genTextCode_(node.nodeValue + "", generator);
         break;
 
       case Node.ELEMENT_NODE:
-        this.genElementCode_(node, scribe);
+        this.genElementCode_(node, generator);
         break;
     }
   }
@@ -36,7 +36,7 @@ JspScript.Parser.prototype.genAttributesCode_ = function(attributes) {
   var needPlus = false;
   var out = '';
 
-  var attrScribe = {
+  var attrGenerator = {
     text: function(s) {
       if (needPlus) out += '+'; needPlus = true;
       out += '\'' + JspScript.jsEsc(s) + '\'';
@@ -49,7 +49,7 @@ JspScript.Parser.prototype.genAttributesCode_ = function(attributes) {
 
   for (var i = 0; i < attributes.length; i++) {
     var attribute = attributes.item(i);
-    this.genTextCode_(attribute.value + "", attrScribe);
+    this.genTextCode_(attribute.value + "", attrGenerator);
 
     var attr = {
       name: JspScript.jsEsc(attribute.name + ""),
@@ -63,34 +63,34 @@ JspScript.Parser.prototype.genAttributesCode_ = function(attributes) {
   return attrsOut;
 }
 
-JspScript.Parser.prototype.genTextCode_ = function(text, scribe) {
+JspScript.Parser.prototype.genTextCode_ = function(text, generator) {
   JspScript.Template.RE_EL.lastIndex = 0;
 
   var start = 0;
   var match;
   while ((match = JspScript.Template.RE_EL.exec(text))) {
     if (start < match.index) {
-      scribe.text(text.substring(start, match.index));
+      generator.text(text.substring(start, match.index));
       start = match.index;
     }
 
     if (match[0][0] == '\\') { // escaped expression: \${xxx}
-      scribe.text(match[0].substring(1));
+      generator.text(match[0].substring(1));
     } else {
       var expr = this.env_.translateExpression(match[1]);
-      scribe.expression(expr);
+      generator.expression(expr);
     }
 
     start = JspScript.Template.RE_EL.lastIndex;
   }
 
   if (start < text.length) {
-    scribe.text(text.substring(start));
+    generator.text(text.substring(start));
   }
 };
 
 
-JspScript.Parser.prototype.genElementCode_ = function(el, scribe) {
+JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
   var hasChildren = el.childNodes.length > 0;
 
   var atMatch = JspScript.Template.RE_TAG_AT.exec(el.tagName + ""); // todo: test stringification
@@ -104,13 +104,13 @@ JspScript.Parser.prototype.genElementCode_ = function(el, scribe) {
       } else {
         taglibUri = el.getAttribute('tagdir');
       }
-      scribe.taglibDeclaration(taglibPrefix + "", taglibUri + ""); // todo: test stringification
+      generator.taglibDeclaration(taglibPrefix + "", taglibUri + ""); // todo: test stringification
     } else if (op == 'include') {
       var includeFile = el.getAttribute('file') + ""; // todo: test stringification
       var url = JspScript.joinUrls(this.env_.baseUrl, this.currentUrl_, includeFile);
       var contents = this.env_.fetchFileContents(url);
       var dom = this.env_.createDomFromString(contents);
-      this.walkNodes_(dom.childNodes, scribe);
+      this.walkNodes_(dom.childNodes, generator);
     }
     return;
   }
@@ -120,18 +120,18 @@ JspScript.Parser.prototype.genElementCode_ = function(el, scribe) {
     var tagPrefix = nsMatch[1];
     var tagName = nsMatch[2];
 
-    scribe.tagStart(tagPrefix, tagName, this.genAttributesCode_(el.attributes, scribe), this);
+    generator.tagStart(tagPrefix, tagName, this.genAttributesCode_(el.attributes, generator), this);
     if (hasChildren) {
-      this.walkNodes_(el.childNodes, scribe);
+      this.walkNodes_(el.childNodes, generator);
     }
-    scribe.tagEnd();
+    generator.tagEnd();
 
     return;
   }
 
-  scribe.element(el.tagName + "", this.genAttributesCode_(el.attributes, scribe), hasChildren);
+  generator.element(el.tagName + "", this.genAttributesCode_(el.attributes, generator), hasChildren);
   if (hasChildren) {
-    this.walkNodes_(el.childNodes, scribe);
-    scribe.pop();
+    this.walkNodes_(el.childNodes, generator);
+    generator.pop();
   }
 }
