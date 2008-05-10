@@ -5,14 +5,14 @@ JspScript.Env.CoreTaglib = new JspScript.TagLib({
       var items = attrs['items'];
       var varName = attrs['var'];
       var extraAttrs = {};
-      console.log(attrs);
+//      console.log(attrs);
       var result = [];
       for (var index = 0; index < items.length; index++) {
         extraAttrs[varName] = items[index];
         var output = tagContext.renderBody(parent, extraAttrs);
-        console.log("foreach;", output.length);
+//        console.log("foreach;", output.length);
         result = result.concat(output);
-        console.log(extraAttrs[varName], result.length);
+//        console.log(extraAttrs[varName], result.length);
       }
       return result;
     }

@@ -309,8 +309,8 @@
 
     var template = env.createTemplateFromString('before-<%@ include file="otherFile.jspf" %>-after-<x:test/>',
         'current/dir/thisFile.jsp');
-    console.log('xXXXXXXXXXX');
-    console.log(template.templateFunction.toString());
+//    console.log('xXXXXXXXXXX');
+//    console.log(template.templateFunction.toString());
     assertText('before-avant--après-after-extérieur', template.render({}));
   }
 
@@ -377,7 +377,7 @@
     var template = env.createTemplateFromString(sample);
     var rendered = template.render();
     assertNotNull(rendered);
-    console.log(rendered);
+//    console.log(rendered);
     assertEquals('html', rendered.tagName);
   }
 

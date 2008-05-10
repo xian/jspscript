@@ -50,7 +50,7 @@
     spyGenerator.epilog();
 
     var script = spyGenerator.getScript();
-    console.log(script);
+//    console.log(script);
     var fn = new Function('attrs', script)
     var rendered = fn({});
 
@@ -78,7 +78,7 @@
     spyGenerator.epilog();
 
     var script = spyGenerator.getScript();
-    console.log(script);
+//    console.log(script);
     var fn = new Function('attrs', script)
     var template = new JspScript.Template(fn, env);
     assertText('@contents@', template.render({}));
@@ -165,7 +165,7 @@
     spyGenerator.epilog();
 
     var script = spyGenerator.getScript();
-    console.log(script);
+//    console.log(script);
     var fn = new Function('attrs', script);
     var template = new JspScript.Template(fn, env);
 
@@ -219,7 +219,7 @@
 
   function testArrayIteratorsUseItemsMethodNotArrayIndexesForRhino() {
     var DomItems = function(items) {
-      console.log('new DomItems', items);
+//      console.log('new DomItems', items);
       this._items = items;
       this.length = items.length;
     }
