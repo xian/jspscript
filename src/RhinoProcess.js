@@ -94,9 +94,9 @@ RhinoProcessor.prototype.processFile = function(inFileName) {
 //  print(template);
 
   var sourceDom = this.env.createDomFromString(input);
-  var generator = new JspScript.Generator(this.env);
+  var parser = new JspScript.Parser(this.env);
   var scribe = new JspScript.Scribe();
-  generator.generateFunctionBody(sourceDom.childNodes, scribe, inFileName);
+  parser.parseFunctionBody(sourceDom.childNodes, scribe, inFileName);
 
 //  var fnName = (inFileName + "").replace(/([^a-zA-Z0-9])/g, function(match) {
 //    return "_" + match.charCodeAt(0).toString(16);

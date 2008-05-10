@@ -8,6 +8,7 @@
   <script type="text/javascript" src="JsMock.js"></script>
   <script type="text/javascript" src="../src/JspScript.js"></script>
   <script type="text/javascript" src="../src/Generator.js"></script>
+  <script type="text/javascript" src="../src/Parser.js"></script>
 </head>
 <body>
 
@@ -15,12 +16,12 @@
 
   var env;
   var spyScribe;
-  var generator;
+  var parser;
   var out;
 
   function setUp() {
     env = new JspScript.Env();
-    generator = new JspScript.Generator(env);
+    parser = new JspScript.Parser(env);
 
     spyScribe = new JspScript.Scribe();
     out = '';
@@ -47,7 +48,7 @@
       JsMock.expect('epilog');
     });
 
-    generator.generateFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyScribe);
 
     JsMock.validate(spyScribe);
   }
@@ -91,13 +92,13 @@
     var spyScribe = new JsMock(JspScript.Scribe, function() {
       JsMock.expect('prolog');
       JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
-      JsMock.expect('tagStart', 'x', 'test', [], generator);
+      JsMock.expect('tagStart', 'x', 'test', [], parser);
       JsMock.expect('text', 'contents');
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
     });
 
-    generator.generateFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyScribe);
 
     JsMock.validate(spyScribe);
   }
@@ -111,7 +112,7 @@
     spyScribe.prolog();
     spyScribe.taglibDeclaration('x', 'http://xxx/xxx');
     out = '';
-    spyScribe.tagStart('x', 'test', [], generator);
+    spyScribe.tagStart('x', 'test', [], parser);
     spyScribe.text('contents');
     spyScribe.tagEnd();
     spyScribe.epilog();
@@ -129,12 +130,12 @@
 
     var spyScribe = new JsMock(JspScript.Scribe, function() {
       JsMock.expect('prolog');
-      JsMock.expect('tagStart', 'jsp', 'doBody', [], generator);
+      JsMock.expect('tagStart', 'jsp', 'doBody', [], parser);
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
     });
 
-    generator.generateFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyScribe);
 
     JsMock.validate(spyScribe);
   }
@@ -145,7 +146,7 @@
     spyScribe.prolog();
 
     out = '';
-    spyScribe.tagStart('jsp', 'doBody', [], generator);
+    spyScribe.tagStart('jsp', 'doBody', [], parser);
     spyScribe.tagEnd();
 
     assertEquals(
@@ -187,12 +188,12 @@
       JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
       JsMock.expect('text', '-après');
       JsMock.expect('text', '-after-');
-      JsMock.expect('tagStart', 'x', 'test', [], generator);
+      JsMock.expect('tagStart', 'x', 'test', [], parser);
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
     });
 
-    generator.generateFunctionBody(dom.childNodes, spyScribe, 'baseUrl/thisFile.jsp');
+    parser.parseFunctionBody(dom.childNodes, spyScribe, 'baseUrl/thisFile.jsp');
 
     JsMock.validate(spyScribe);
   }
@@ -212,7 +213,7 @@
       JsMock.expect('text', 'attr from outside ');
       JsMock.expect('expression', 'g(\'value\')');
       JsMock.expect('text', ', ');
-      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}], generator);
+      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
       JsMock.expect('text', 'inside a tag body it ');
       JsMock.expect('expression', 'g(\'value\')');
       JsMock.expect('text', ' ');
@@ -222,7 +223,7 @@
       JsMock.expect('epilog');
     });
 
-    generator.generateFunctionBody(dom.childNodes, spyScribe);
+    parser.parseFunctionBody(dom.childNodes, spyScribe);
 
     JsMock.validate(spyScribe);
   }
@@ -242,7 +243,7 @@
     spyScribe.text(', ');
 
     out = '';
-    spyScribe.tagStart('x', 'test', [{name: 'tagValue', value: '\'also\''}], generator);
+    spyScribe.tagStart('x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
     spyScribe.text('inside a tag body it ');
     spyScribe.expression('g(\'value\')');
     spyScribe.text(' ');

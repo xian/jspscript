@@ -101,9 +101,9 @@ JspScript.Env.prototype.createTemplateFromString = function(string, opt_url) {
 };
 
 JspScript.Env.prototype.createTemplateFromDom = function(sourceDom, url) {
-  var generator = new JspScript.Generator(this);
+  var parser = new JspScript.Parser(this);
   var scribe = new JspScript.Scribe();
-  generator.generateFunctionBody(sourceDom.childNodes, scribe, url);
+  parser.parseFunctionBody(sourceDom.childNodes, scribe, url);
   var fn = new Function('attrs', 'tagContext', scribe.getScript());
   return new JspScript.Template(fn, this, url);
 }
@@ -164,7 +164,7 @@ JspScript.Env.RE_START_SYMBOL_CHAR = /[a-zA-Z_$]/;
 JspScript.Env.RE_SYMBOL_CHAR = /[a-zA-Z0-9_$]/;
 JspScript.Env.RE_CARRYON_CHAR = /[.a-zA-Z0-9_$]/;
 
-// todo: move to Generator.js
+// todo: move to Parser.js
 ElScribe = function() {
   this.out_ = '';
 };
