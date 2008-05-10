@@ -171,23 +171,23 @@ JspScript.Generator.prototype.tagEnd = function() {
   this.put(', attrs);\n')
 };
 
-
-JspScript.ElGenerator = function() {
-  this.out_ = '';
-};
-JspScript.ElGenerator.prototype.getScript = function() {
-  return this.out_;
-};
-JspScript.ElGenerator.prototype.startSymbolLookup = function() {
-  this.gChar_ = this.out_.length;
-  this.out_ += 'g(\'';
-};
-JspScript.ElGenerator.prototype.emitSymbol = function(symbol) {
-  this.out_ += symbol;
-};
-JspScript.ElGenerator.prototype.endSymbolLookup = function() {
-  this.out_ += '\')';
-};
-JspScript.ElGenerator.prototype.lookupCurrentSymbolAsFunction = function() {
-  this.out_ = this.out_.substring(0, this.gChar_) + 'f' + this.out_.substring(this.gChar_ + 1);
+JspScript.Generator.translateElExpression = function(elExpr) {
+  var script = '';
+  for (var i = 0; i < elExpr.tokens.length; i++) {
+    var token = elExpr.tokens[i];
+    switch(token.type) {
+      case JspScript.Parser.ElExpression.SYMBOL_LOOKUP:
+        script += 'g(\'' + token.value + '\')';
+        break;
+      case JspScript.Parser.ElExpression.FUNCTION_LOOKUP:
+        script += 'f(\'' + token.taglibNs + '\',\'' + token.value + '\')';
+        break;
+      case JspScript.Parser.ElExpression.JS_CODE_LITERAL:
+        script += token.value;
+        break;
+      default:
+        throw new Error('unknown token type "' + token.type + '"');
+    }
+  }
+  return script;
 };

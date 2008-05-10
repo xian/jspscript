@@ -77,8 +77,8 @@ JspScript.Parser.prototype.genTextCode_ = function(text, generator) {
     if (match[0][0] == '\\') { // escaped expression: \${xxx}
       generator.text(match[0].substring(1));
     } else {
-      var expr = this.translateExpression(match[1]);
-      generator.expression(expr);
+      var elExpr = this.parseExpression(match[1]);
+      generator.expression(JspScript.Generator.translateElExpression(elExpr));
     }
 
     start = JspScript.Template.RE_EL.lastIndex;
@@ -134,30 +134,6 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
     this.walkNodes_(el.childNodes, generator);
     generator.pop();
   }
-};
-
-JspScript.Parser.prototype.translateExpression = function(expression) {
-  var elExpr = this.parseExpression(expression);
-  console.log(elExpr.tokens);
-
-  var script = '';
-  for (var i = 0; i < elExpr.tokens.length; i++) {
-    var token = elExpr.tokens[i];
-    switch(token.type) {
-      case JspScript.Parser.ElExpression.SYMBOL_LOOKUP:
-        script += 'g(\'' + token.value + '\')';
-        break;
-      case JspScript.Parser.ElExpression.FUNCTION_LOOKUP:
-        script += 'f(\'' + token.taglibNs + '\',\'' + token.value + '\')';
-        break;
-      case JspScript.Parser.ElExpression.JS_CODE_LITERAL:
-        script += token.value;
-        break;
-      default:
-        throw new Error('unknown token type "' + token.type + '"');
-    }
-  }
-  return script;
 };
 
 JspScript.Parser.ElExpression = function() {
