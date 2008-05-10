@@ -137,7 +137,53 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
 };
 
 JspScript.Parser.prototype.translateExpression = function(expression) {
-  var generator = new JspScript.ElGenerator();
+  var elExpr = this.parseExpression(expression);
+
+  var script = '';
+  for (var i = 0; i < elExpr.tokens.length; i++) {
+    var token = elExpr.tokens[i];
+    switch(token.type) {
+      case JspScript.Parser.ElExpression.SYMBOL_LOOKUP:
+        script += 'g(\'' + token.value + '\')';
+        break;
+      case JspScript.Parser.ElExpression.FUNCTION_LOOKUP:
+        script += 'f(\'' + token.value + '\')';
+        break;
+      case JspScript.Parser.ElExpression.JS_CODE_LITERAL:
+        script += token.value;
+        break;
+      default:
+        throw new Error('unknown token type "' + token.type + '"');
+    }
+  }
+  return script;
+};
+
+JspScript.Parser.ElExpression = function() {
+  this.tokens = [];
+};
+
+JspScript.Parser.ElExpression.SYMBOL_LOOKUP = 'symbol-lookup';
+JspScript.Parser.ElExpression.FUNCTION_LOOKUP = 'function-lookup';
+JspScript.Parser.ElExpression.JS_CODE_LITERAL = 'js-code-literal';
+
+JspScript.Parser.ElExpression.prototype.addToken = function(token) {
+  if (token.value != '') this.tokens.push(token);
+};
+
+JspScript.Parser.Token = function(type) {
+  this.type = type;
+  this.value = '';
+};
+
+JspScript.Parser.Token.prototype.append = function(atom) {
+  this.value += atom;
+};
+
+
+JspScript.Parser.prototype.parseExpression = function(expression) {
+  var elExpr = new JspScript.Parser.ElExpression();
+  var currentToken = new JspScript.Parser.Token(JspScript.Parser.ElExpression.JS_CODE_LITERAL);
 
   var state = 0;
   var until = '';
@@ -145,12 +191,11 @@ JspScript.Parser.prototype.translateExpression = function(expression) {
   for (var i = 0; i < expression.length; i++) {
     var c = expression[i];
 
-//    console.log('tX', state, c, out, until == '' ? '' : 'until==' + until);
-
     switch (state) {
       case 0: // outside of symbol
         if (c.match(JspScript.Env.RE_START_SYMBOL_CHAR)) {
-          generator.startSymbolLookup();
+          elExpr.addToken(currentToken);
+          currentToken = new JspScript.Parser.Token(JspScript.Parser.ElExpression.SYMBOL_LOOKUP);
           state = 1;
         } else if (c == '"' || c == '\'') {
           until = c;
@@ -162,14 +207,15 @@ JspScript.Parser.prototype.translateExpression = function(expression) {
         if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
 
           if (c == '.') {
-            generator.endSymbolLookup();
+            elExpr.addToken(currentToken);
+            currentToken = new JspScript.Parser.Token(JspScript.Parser.ElExpression.JS_CODE_LITERAL);
             state = 2;
           } else if (c == ':') {
-            // ugly...
-            generator.lookupCurrentSymbolAsFunction();
+            currentToken.type = JspScript.Parser.ElExpression.FUNCTION_LOOKUP;
             c = '\',\'';
           } else {
-            generator.endSymbolLookup();
+            elExpr.addToken(currentToken);
+            currentToken = new JspScript.Parser.Token(JspScript.Parser.ElExpression.JS_CODE_LITERAL);
             state = 0;
           }
         }
@@ -204,15 +250,11 @@ JspScript.Parser.prototype.translateExpression = function(expression) {
         break;
     }
 
-    generator.emitSymbol(c);
+    currentToken.append(c);
   }
 
-  if (state == 1) {
-    generator.endSymbolLookup();
-  }
+  elExpr.addToken(currentToken);
 
-//  console.log('tX', out);
-
-  return generator.getScript();
+  return elExpr;
 };
 
