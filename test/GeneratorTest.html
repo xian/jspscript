@@ -31,7 +31,7 @@
     }
   }
 
-  function testSimpleDomGeneration_Generator() {
+  function testSimpleDomGeneration_Parser() {
     var dom = env.createDomFromString(
         '<html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>');
 
@@ -85,7 +85,7 @@
     assertEquals('header', h2.getAttribute('id'));
   }
 
-  function testTaglibTagBody_Generator() {
+  function testTaglibTagBody_Parser() {
     var dom = env.createDomFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>');
 
@@ -124,7 +124,7 @@
     assertText('@contents@', template.render({}));
   }
 
-  function testJspDoBodyCall_Generator() {
+  function testJspDoBodyCall_Parser() {
     var dom = env.createDomFromString(
         '<jsp:doBody/>');
 
@@ -172,7 +172,7 @@
     assertTrue(bodyFnCalled);
   }
 
-  function testJspIncludeCall_Generator() {
+  function testJspIncludeCall_Parser() {
     var dom = env.createDomFromString(
         'before-<%@ include file="otherFile.jspf" %>-after-<x:test/>');
 
@@ -202,7 +202,7 @@
 
   }
 
-  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Generator() {
+  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Parser() {
     var dom = env.createDomFromString(
         '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
         'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
