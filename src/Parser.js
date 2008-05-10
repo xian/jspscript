@@ -77,7 +77,7 @@ JspScript.Parser.prototype.genTextCode_ = function(text, generator) {
     if (match[0][0] == '\\') { // escaped expression: \${xxx}
       generator.text(match[0].substring(1));
     } else {
-      var expr = this.env_.translateExpression(match[1]);
+      var expr = this.translateExpression(match[1]);
       generator.expression(expr);
     }
 
@@ -134,4 +134,85 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
     this.walkNodes_(el.childNodes, generator);
     generator.pop();
   }
-}
+};
+
+JspScript.Parser.prototype.translateExpression = function(expression) {
+  var generator = new JspScript.ElGenerator();
+
+  var state = 0;
+  var until = '';
+
+  for (var i = 0; i < expression.length; i++) {
+    var c = expression[i];
+
+//    console.log('tX', state, c, out, until == '' ? '' : 'until==' + until);
+
+    switch (state) {
+      case 0: // outside of symbol
+        if (c.match(JspScript.Env.RE_START_SYMBOL_CHAR)) {
+          generator.startSymbolLookup();
+          state = 1;
+        } else if (c == '"' || c == '\'') {
+          until = c;
+          state = 4;
+        }
+        break;
+
+      case 1: // inside of dereferenced symbol
+        if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
+
+          if (c == '.') {
+            generator.endSymbolLookup();
+            state = 2;
+          } else if (c == ':') {
+            // ugly...
+            generator.lookupCurrentSymbolAsFunction();
+            c = '\',\'';
+          } else {
+            generator.endSymbolLookup();
+            state = 0;
+          }
+        }
+        break;
+
+      case 2: // after dereferenced or literal symbol
+        if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
+          if (c == '[') {
+            state = 0;
+          } else {
+            state = 3;
+          }
+        }
+        break;
+
+      case 3:
+        if (!c.match(JspScript.Env.RE_SYMBOL_CHAR)) {
+          state = 0;
+        }
+        break;
+
+      case 4: // inside quoted literal
+        if (c == '\\') {
+          state = 5;
+        } else if (c == until) {
+          state = 0;
+        }
+        break;
+
+      case 5: // escaped char inside quoted literal
+        state = 4;
+        break;
+    }
+
+    generator.emitSymbol(c);
+  }
+
+  if (state == 1) {
+    generator.endSymbolLookup();
+  }
+
+//  console.log('tX', out);
+
+  return generator.getScript();
+};
+

@@ -31,28 +31,6 @@
     }
   }
 
-  function testSimpleDomGeneration_Parser() {
-    var dom = env.createDomFromString(
-        '<html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>');
-
-    var spyGenerator = new JsMock(JspScript.Generator, function() {
-      JsMock.expect('prolog');
-      JsMock.expect('element', 'html', [], true);
-      JsMock.expect('element', 'body', [], true);
-      JsMock.expect('element', 'h2', [{name: 'id', value: '\'header\''}], true);
-      JsMock.expect('text', 'Hello World!');
-      JsMock.expect('pop');
-      JsMock.expect('text', 'More text...\n');
-      JsMock.expect('pop');
-      JsMock.expect('pop');
-      JsMock.expect('epilog');
-    });
-
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
-
-    JsMock.validate(spyGenerator);
-  }
-
   function testSimpleDomGeneration_Generator() {
     // <html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>
 
@@ -85,24 +63,6 @@
     assertEquals('header', h2.getAttribute('id'));
   }
 
-  function testTaglibTagBody_Parser() {
-    var dom = env.createDomFromString(
-        '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>');
-
-    var spyGenerator = new JsMock(JspScript.Generator, function() {
-      JsMock.expect('prolog');
-      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
-      JsMock.expect('tagStart', 'x', 'test', [], parser);
-      JsMock.expect('text', 'contents');
-      JsMock.expect('tagEnd');
-      JsMock.expect('epilog');
-    });
-
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
-
-    JsMock.validate(spyGenerator);
-  }
-
   function testTaglibTagBody_Generator() {
 //  '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>'
     env.registerTaglib('http://xxx/xxx', new JspScript.TagLib({
@@ -122,22 +82,6 @@
     var fn = new Function('attrs', script)
     var template = new JspScript.Template(fn, env);
     assertText('@contents@', template.render({}));
-  }
-
-  function testJspDoBodyCall_Parser() {
-    var dom = env.createDomFromString(
-        '<jsp:doBody/>');
-
-    var spyGenerator = new JsMock(JspScript.Generator, function() {
-      JsMock.expect('prolog');
-      JsMock.expect('tagStart', 'jsp', 'doBody', [], parser);
-      JsMock.expect('tagEnd');
-      JsMock.expect('epilog');
-    });
-
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
-
-    JsMock.validate(spyGenerator);
   }
 
   function testJspDoBodyCall_Generator() {
@@ -172,60 +116,8 @@
     assertTrue(bodyFnCalled);
   }
 
-  function testJspIncludeCall_Parser() {
-    var dom = env.createDomFromString(
-        'before-<%@ include file="otherFile.jspf" %>-after-<x:test/>');
-
-    env.fetchFileContents = function(url) {
-      assertEquals('baseUrl/otherFile.jspf', url);
-      return 'avant-<%@ taglib prefix="x" uri="http://xxx/xxx" %>-après';
-    }
-
-    var spyGenerator = new JsMock(JspScript.Generator, function() {
-      JsMock.expect('prolog');
-      JsMock.expect('text', 'before-');
-      JsMock.expect('text', 'avant-');
-      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
-      JsMock.expect('text', '-après');
-      JsMock.expect('text', '-after-');
-      JsMock.expect('tagStart', 'x', 'test', [], parser);
-      JsMock.expect('tagEnd');
-      JsMock.expect('epilog');
-    });
-
-    parser.parseFunctionBody(dom.childNodes, spyGenerator, 'baseUrl/thisFile.jsp');
-
-    JsMock.validate(spyGenerator);
-  }
-
   function testIncludeDirective_Generator() {
 
-  }
-
-  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Parser() {
-    var dom = env.createDomFromString(
-        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
-        'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
-
-    var spyGenerator = new JsMock(JspScript.Generator, function() {
-      JsMock.expect('prolog');
-      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
-      JsMock.expect('text', 'attr from outside ');
-      JsMock.expect('expression', 'g(\'value\')');
-      JsMock.expect('text', ', ');
-      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
-      JsMock.expect('text', 'inside a tag body it ');
-      JsMock.expect('expression', 'g(\'value\')');
-      JsMock.expect('text', ' ');
-      JsMock.expect('expression', 'g(\'tagValue\')');
-      JsMock.expect('text', '!');
-      JsMock.expect('tagEnd');
-      JsMock.expect('epilog');
-    });
-
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
-
-    JsMock.validate(spyGenerator);
   }
 
   function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Generator() {

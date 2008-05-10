@@ -170,3 +170,24 @@ JspScript.Generator.prototype.tagEnd = function() {
   this.put('return top;\n}')
   this.put(', attrs);\n')
 };
+
+
+JspScript.ElGenerator = function() {
+  this.out_ = '';
+};
+JspScript.ElGenerator.prototype.getScript = function() {
+  return this.out_;
+};
+JspScript.ElGenerator.prototype.startSymbolLookup = function() {
+  this.gChar_ = this.out_.length;
+  this.out_ += 'g(\'';
+};
+JspScript.ElGenerator.prototype.emitSymbol = function(symbol) {
+  this.out_ += symbol;
+};
+JspScript.ElGenerator.prototype.endSymbolLookup = function() {
+  this.out_ += '\')';
+};
+JspScript.ElGenerator.prototype.lookupCurrentSymbolAsFunction = function() {
+  this.out_ = this.out_.substring(0, this.gChar_) + 'f' + this.out_.substring(this.gChar_ + 1);
+};

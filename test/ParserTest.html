@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Test</title>
+  <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
+  <script type="text/javascript" src="TestSupport.js"></script>
+  <script type="text/javascript" src="JsMock.js"></script>
+  <script type="text/javascript" src="../src/JspScript.js"></script>
+  <script type="text/javascript" src="../src/Generator.js"></script>
+  <script type="text/javascript" src="../src/Parser.js"></script>
+</head>
+<body>
+
+<script type="text/javascript">
+
+  var env;
+  var spyGenerator;
+  var parser;
+  var out;
+
+  function setUp() {
+    env = new JspScript.Env();
+    parser = new JspScript.Parser(env);
+
+    spyGenerator = new JspScript.Generator();
+    out = '';
+    spyGenerator.oldPut = spyGenerator.put;
+    spyGenerator.put = function(str) {
+      out += str; spyGenerator.oldPut(str);
+    }
+  }
+
+  function testSimpleDomGeneration_Parser() {
+    var dom = env.createDomFromString(
+        '<html><body><h2 id="header">Hello World!</h2>More text...\n</body></html>');
+
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('element', 'html', [], true);
+      JsMock.expect('element', 'body', [], true);
+      JsMock.expect('element', 'h2', [{name: 'id', value: '\'header\''}], true);
+      JsMock.expect('text', 'Hello World!');
+      JsMock.expect('pop');
+      JsMock.expect('text', 'More text...\n');
+      JsMock.expect('pop');
+      JsMock.expect('pop');
+      JsMock.expect('epilog');
+    });
+
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+
+    JsMock.validate(spyGenerator);
+  }
+
+  function testTaglibTagBody_Parser() {
+    var dom = env.createDomFromString(
+        '<%@ taglib prefix="x" uri="http://xxx/xxx" %><x:test>contents</x:test>');
+
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
+      JsMock.expect('tagStart', 'x', 'test', [], parser);
+      JsMock.expect('text', 'contents');
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
+
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+
+    JsMock.validate(spyGenerator);
+  }
+
+  function testJspDoBodyCall_Parser() {
+    var dom = env.createDomFromString(
+        '<jsp:doBody/>');
+
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('tagStart', 'jsp', 'doBody', [], parser);
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
+
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+
+    JsMock.validate(spyGenerator);
+  }
+
+  function testJspIncludeCall_Parser() {
+    var dom = env.createDomFromString(
+        'before-<%@ include file="otherFile.jspf" %>-after-<x:test/>');
+
+    env.fetchFileContents = function(url) {
+      assertEquals('baseUrl/otherFile.jspf', url);
+      return 'avant-<%@ taglib prefix="x" uri="http://xxx/xxx" %>-après';
+    }
+
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('text', 'before-');
+      JsMock.expect('text', 'avant-');
+      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
+      JsMock.expect('text', '-après');
+      JsMock.expect('text', '-after-');
+      JsMock.expect('tagStart', 'x', 'test', [], parser);
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
+
+    parser.parseFunctionBody(dom.childNodes, spyGenerator, 'baseUrl/thisFile.jsp');
+
+    JsMock.validate(spyGenerator);
+  }
+
+  function testTaglibTagBodyCanAccessBothTagAndOuterAttributes_Parser() {
+    var dom = env.createDomFromString(
+        '<%@ taglib prefix="x" uri="http://xxx/xxx" %>' +
+        'attr from outside ${value}, <x:test tagValue="also">inside a tag body it ${value} ${tagValue}!</x:test>');
+
+    var spyGenerator = new JsMock(JspScript.Generator, function() {
+      JsMock.expect('prolog');
+      JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
+      JsMock.expect('text', 'attr from outside ');
+      JsMock.expect('expression', 'g(\'value\')');
+      JsMock.expect('text', ', ');
+      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
+      JsMock.expect('text', 'inside a tag body it ');
+      JsMock.expect('expression', 'g(\'value\')');
+      JsMock.expect('text', ' ');
+      JsMock.expect('expression', 'g(\'tagValue\')');
+      JsMock.expect('text', '!');
+      JsMock.expect('tagEnd');
+      JsMock.expect('epilog');
+    });
+
+    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+
+    JsMock.validate(spyGenerator);
+  }
+
+  function testTranslateExpression() {
+    assertEquals('g(\'symbol\')',
+        parser.translateExpression('symbol'));
+
+    assertEquals('g(\'symbol42xSymbol_symbol\')',
+        parser.translateExpression('symbol42xSymbol_symbol'));
+
+    assertEquals('42',
+        parser.translateExpression('42'));
+
+    assertEquals('42.42',
+        parser.translateExpression('42.42'));
+
+    assertEquals('-42.42',
+        parser.translateExpression('-42.42'));
+
+    assertEquals('(19 + 2) * 2',
+        parser.translateExpression('(19 + 2) * 2'));
+
+    assertEquals('"literal" + \'string\'',
+        parser.translateExpression('"literal" + \'string\''));
+
+    assertEquals('"can\'t" + \'stop the \\\'music\\\'\'',
+        parser.translateExpression('"can\'t" + \'stop the \\\'music\\\'\''));
+
+    assertEquals('g(\'symbol1\') + g(\'symbol2\')',
+        parser.translateExpression('symbol1 + symbol2'));
+
+    assertEquals('g(\'symbol1\')[g(\'index\')]',
+        parser.translateExpression('symbol1[index]'));
+
+    assertEquals('g(\'symbol\').member',
+        parser.translateExpression('symbol.member'));
+
+    assertEquals('g(\'symbol\').member[g(\'index\')] * 3',
+        parser.translateExpression('symbol.member[index] * 3'));
+
+    assertEquals('g(\'symbol\').length()',
+        parser.translateExpression('symbol.length()'));
+  }
+
+  function testTranslateExpression_Escaping() {
+    var translation = parser.translateExpression('\'"no!" he said, \' + "\\"you just can\'t stop the music!\\""');
+    assertEquals('\'"no!" he said, \' + "\\"you just can\'t stop the music!\\""',
+        translation);
+    assertEquals('"no!" he said, "you just can\'t stop the music!"', eval(translation));
+    // (nobody can)
+  }
+
+  function testTranslateExpression_Functions() {
+    assertEquals('f(\'fn\',\'length\')(g(\'symbol\'))',
+        parser.translateExpression('fn:length(symbol)'));
+
+    assertEquals('f(\'fn\',\'length\')("literal")',
+        parser.translateExpression('fn:length("literal")'));
+
+    assertEquals('f(\'xxx\',\'custom\')(\'abc\', g(\'def\'), -123.4, g(\'null\'), \'\', "")',
+        parser.translateExpression('xxx:custom(\'abc\', def, -123.4, null, \'\', "")'));
+
+// todo: null should be null
+//    assertEquals('f(\'xxx\',\'custom\')(\'abc\', g(\'def\'), -123.4, null, \'\', "")',
+//        parser.translateExpression('xxx:custom(\'abc\', def, -123.4, null, \'\', "")'));
+
+    assertEquals('f(\'fn\',\'length\')(f(\'fn\',\'toUpperCase\')("blah"))',
+        parser.translateExpression('fn:length(fn:toUpperCase("blah"))'));
+  }
+
+
+</script>
+
+</body>
+</html>
