@@ -103,7 +103,7 @@ JspScript.Env.prototype.createTemplateFromString = function(string, opt_url) {
 JspScript.Env.prototype.createTemplateFromDom = function(sourceDom, url) {
   var parser = new JspScript.Parser(this);
   var generator = new JspScript.Generator();
-  parser.parseFunctionBody(sourceDom.childNodes, generator, url);
+  parser.generateFunctionBody(sourceDom.childNodes, generator, url);
   var fn = new Function('attrs', 'tagContext', generator.getScript());
   return new JspScript.Template(fn, this, url);
 }

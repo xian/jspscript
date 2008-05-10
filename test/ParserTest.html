@@ -48,7 +48,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+    parser.generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }
@@ -66,7 +66,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+    parser.generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }
@@ -82,7 +82,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+    parser.generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }
@@ -108,7 +108,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyGenerator, 'baseUrl/thisFile.jsp');
+    parser.generateFunctionBody(dom.childNodes, spyGenerator, 'baseUrl/thisFile.jsp');
 
     JsMock.validate(spyGenerator);
   }
@@ -134,7 +134,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.parseFunctionBody(dom.childNodes, spyGenerator);
+    parser.generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }

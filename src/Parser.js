@@ -3,7 +3,7 @@ JspScript.Parser = function(env) {
   this.currentUrl_ = null;
 }
 
-JspScript.Parser.prototype.parseFunctionBody = function(nodes, generator, url) {
+JspScript.Parser.prototype.generateFunctionBody = function(nodes, generator, url) {
   var previousUrl = this.currentUrl_;
   this.currentUrl_ = url || null;
   try {
