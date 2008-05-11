@@ -26,7 +26,13 @@ JspScript.joinUrls = function(rootUrl, baseUrl, url) {
   }
 
   return outputUrlParts.join('/');
-}
+};
+
+JspScript.inherit = function(subClass, superClass) {
+  var x = function() {};
+  x.prototype = superClass.prototype;
+  subClass.prototype = new x();
+};
 
 
 JspScript.Env = function(opt_baseUrl, opt_domParserFunction) {

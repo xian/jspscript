@@ -3,29 +3,138 @@ JspScript.Parser = function(env) {
   this.currentUrl_ = null;
 }
 
-JspScript.Parser.prototype.generateFunctionBody = function(nodes, generator, url) {
+JspScript.Parser.ElExpression = function() {
+  this.tokens = [];
+};
+
+JspScript.Parser.ElExpression.SYMBOL_LOOKUP = 'symbol-lookup';
+JspScript.Parser.ElExpression.FUNCTION_LOOKUP = 'function-lookup';
+JspScript.Parser.ElExpression.JS_CODE_LITERAL = 'js-code-literal';
+
+JspScript.Parser.ElExpression.prototype.addToken = function(token) {
+  if (token.value != '') this.tokens.push(token);
+};
+
+JspScript.Parser.Token = function(type) {
+  this.type = type;
+  this.value = '';
+};
+
+JspScript.Parser.Token.prototype.append = function(atom) {
+  this.value += atom;
+};
+
+
+JspScript.Parser.INode = function() {
+  this.children = [];
+};
+
+JspScript.Parser.INode.prototype.add = function(iNode) {
+  this.children.push(iNode);
+};
+
+JspScript.Parser.TextNode = function(text) {
+  this.text = text;
+};
+JspScript.inherit(JspScript.Parser.TextNode, JspScript.Parser.INode);
+
+JspScript.Parser.ElNode = function(el) {
+  this.el = el;
+};
+JspScript.inherit(JspScript.Parser.ElNode, JspScript.Parser.INode);
+
+JspScript.Parser.DomNode = function(tagName) {
+  JspScript.Parser.INode.call(this);
+  this.tagName = tagName;
+  this.attrs = [];
+};
+JspScript.inherit(JspScript.Parser.DomNode, JspScript.Parser.INode);
+
+JspScript.Parser.TaglibDeclarationNode = function(prefix, url) {
+  this.args = arguments;
+  this.prefix = prefix;
+  this.url = url;
+};
+JspScript.inherit(JspScript.Parser.TaglibDeclarationNode, JspScript.Parser.INode);
+
+JspScript.Parser.TagCallNode = function(prefix, name) {
+  JspScript.Parser.INode.call(this);
+  this.prefix = prefix;
+  this.name = name;
+  this.attrs = [];
+};
+JspScript.inherit(JspScript.Parser.TagCallNode, JspScript.Parser.INode);
+
+JspScript.Parser.prototype.parseFunctionBody = function(nodes, url) {
   var previousUrl = this.currentUrl_;
   this.currentUrl_ = url || null;
   try {
-    generator.prolog();
-    this.walkNodes_(nodes, generator);
-    generator.epilog();
+    var treeTop = new JspScript.Parser.INode();
+    this.walkNodes_(nodes, new JspScript.Generator(), treeTop);
+    return treeTop;
   } finally {
     this.currentUrl_ = previousUrl;
   }
 };
 
-JspScript.Parser.prototype.walkNodes_ = function(nodes, generator) {
+/**
+ * @deprecated rewrite ParserTest tests and remove this
+ */
+JspScript.Parser.prototype.generateFunctionBody = function(nodes, generator, url) {
+  generator.emit_ = JspScript.Generator.prototype.emit_;
+  generator.generateFunctionBody = JspScript.Generator.prototype.generateFunctionBody;
+  var parsed = this.parseFunctionBody(nodes, url);
+  generator.generateFunctionBody(parsed);
+};
+
+JspScript.Generator.prototype.generateFunctionBody = function(iNode) {
+  this.prolog();
+  this.emit_(iNode);
+  this.epilog();
+};
+
+JspScript.Generator.prototype.emit_ = function(iNode) {
+  var i;
+  if (iNode instanceof JspScript.Parser.TextNode) {
+    this.text(iNode.text);
+  } else if (iNode instanceof JspScript.Parser.ElNode) {
+    this.expression(iNode.el);
+  } else if (iNode instanceof JspScript.Parser.DomNode) {
+    this.element(iNode.tagName, iNode.attrs, iNode.children.length > 0);
+    for (i = 0; i < iNode.children.length; i++) {
+      this.emit_(iNode.children[i]);
+    }
+    if (iNode.children.length > 0) {
+      this.pop();
+    }
+  } else if (iNode instanceof JspScript.Parser.TaglibDeclarationNode) {
+    this.taglibDeclaration(iNode.prefix, iNode.url);
+  } else if (iNode instanceof JspScript.Parser.TagCallNode) {
+    this.tagStart(iNode.prefix, iNode.name, iNode.attrs);
+    for (i = 0; i < iNode.children.length; i++) {
+      this.emit_(iNode.children[i]);
+    }
+    this.tagEnd();
+  } else if (iNode instanceof JspScript.Parser.INode) {
+    for (i = 0; i < iNode.children.length; i++) {
+      this.emit_(iNode.children[i]);
+    }
+  } else {
+    throw new Error('unknown node!');
+  }
+};
+
+JspScript.Parser.prototype.walkNodes_ = function(nodes, generator, iNode) {
   for (var i = 0; i < nodes.length; i++) {
     var node = nodes.item(i);
     //noinspection JSUnresolvedVariable
     switch (node.nodeType) {
       case Node.TEXT_NODE:
-        this.genTextCode_(node.nodeValue + "", generator);
+        this.genTextCode_(node.nodeValue + "", generator, iNode);
         break;
 
       case Node.ELEMENT_NODE:
-        this.genElementCode_(node, generator);
+        this.genElementCode_(node, generator, iNode);
         break;
     }
   }
@@ -49,7 +158,8 @@ JspScript.Parser.prototype.genAttributesCode_ = function(attributes) {
 
   for (var i = 0; i < attributes.length; i++) {
     var attribute = attributes.item(i);
-    this.genTextCode_(attribute.value + "", attrGenerator);
+    var tempINode = new JspScript.Parser.INode();
+    this.genTextCode_(attribute.value + "", attrGenerator, tempINode);  // todo: wrong -- fix!
 
     var attr = {
       name: JspScript.jsEsc(attribute.name + ""),
@@ -63,7 +173,7 @@ JspScript.Parser.prototype.genAttributesCode_ = function(attributes) {
   return attrsOut;
 }
 
-JspScript.Parser.prototype.genTextCode_ = function(text, generator) {
+JspScript.Parser.prototype.genTextCode_ = function(text, generator, iNode) {
   JspScript.Template.RE_EL.lastIndex = 0;
 
   var start = 0;
@@ -71,14 +181,17 @@ JspScript.Parser.prototype.genTextCode_ = function(text, generator) {
   while ((match = JspScript.Template.RE_EL.exec(text))) {
     if (start < match.index) {
       generator.text(text.substring(start, match.index));
+      iNode.add(new JspScript.Parser.TextNode(text.substring(start, match.index)));
       start = match.index;
     }
 
     if (match[0][0] == '\\') { // escaped expression: \${xxx}
       generator.text(match[0].substring(1));
+      iNode.add(new JspScript.Parser.TextNode(match[0].substring(1)));
     } else {
       var elExpr = this.parseExpression(match[1]);
       generator.expression(JspScript.Generator.translateElExpression(elExpr));
+      iNode.add(new JspScript.Parser.ElNode(JspScript.Generator.translateElExpression(elExpr)));
     }
 
     start = JspScript.Template.RE_EL.lastIndex;
@@ -86,11 +199,12 @@ JspScript.Parser.prototype.genTextCode_ = function(text, generator) {
 
   if (start < text.length) {
     generator.text(text.substring(start));
+    iNode.add(new JspScript.Parser.TextNode(text.substring(start)));
   }
 };
 
 
-JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
+JspScript.Parser.prototype.genElementCode_ = function(el, generator, iNode) {
   var hasChildren = el.childNodes.length > 0;
 
   var atMatch = JspScript.Template.RE_TAG_AT.exec(el.tagName + ""); // todo: test stringification
@@ -104,13 +218,13 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
       } else {
         taglibUri = el.getAttribute('tagdir');
       }
-      generator.taglibDeclaration(taglibPrefix + "", taglibUri + ""); // todo: test stringification
+      iNode.add(new JspScript.Parser.TaglibDeclarationNode(taglibPrefix + "", taglibUri + "")); // todo: test stringification
     } else if (op == 'include') {
       var includeFile = el.getAttribute('file') + ""; // todo: test stringification
       var url = JspScript.joinUrls(this.env_.baseUrl, this.currentUrl_, includeFile);
       var contents = this.env_.fetchFileContents(url);
       var dom = this.env_.createDomFromString(contents);
-      this.walkNodes_(dom.childNodes, generator);
+      this.walkNodes_(dom.childNodes, generator, iNode);
     }
     return;
   }
@@ -120,43 +234,23 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator) {
     var tagPrefix = nsMatch[1];
     var tagName = nsMatch[2];
 
-    generator.tagStart(tagPrefix, tagName, this.genAttributesCode_(el.attributes, generator), this);
+    var tagCallNode = new JspScript.Parser.TagCallNode(tagPrefix, tagName);
+    tagCallNode.attrs = this.genAttributesCode_(el.attributes, generator);
     if (hasChildren) {
-      this.walkNodes_(el.childNodes, generator);
+      this.walkNodes_(el.childNodes, generator, tagCallNode);
     }
-    generator.tagEnd();
+    iNode.add(tagCallNode)
 
     return;
   }
 
-  generator.element(el.tagName + "", this.genAttributesCode_(el.attributes, generator), hasChildren);
+  var domNode = new JspScript.Parser.DomNode(el.tagName + "");
+  domNode.attrs = this.genAttributesCode_(el.attributes, generator);
+  iNode.add(domNode)
   if (hasChildren) {
-    this.walkNodes_(el.childNodes, generator);
-    generator.pop();
+    this.walkNodes_(el.childNodes, generator, domNode);
   }
 };
-
-JspScript.Parser.ElExpression = function() {
-  this.tokens = [];
-};
-
-JspScript.Parser.ElExpression.SYMBOL_LOOKUP = 'symbol-lookup';
-JspScript.Parser.ElExpression.FUNCTION_LOOKUP = 'function-lookup';
-JspScript.Parser.ElExpression.JS_CODE_LITERAL = 'js-code-literal';
-
-JspScript.Parser.ElExpression.prototype.addToken = function(token) {
-  if (token.value != '') this.tokens.push(token);
-};
-
-JspScript.Parser.Token = function(type) {
-  this.type = type;
-  this.value = '';
-};
-
-JspScript.Parser.Token.prototype.append = function(atom) {
-  this.value += atom;
-};
-
 
 JspScript.Parser.prototype.parseExpression = function(expression) {
   var elExpr = new JspScript.Parser.ElExpression();

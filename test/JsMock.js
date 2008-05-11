@@ -57,6 +57,8 @@ JsMock.Expectation = function(args) {
   this.occurring = 1;
 };
 
+JsMock.ANYTHING = {};
+
 JsMock.Expectation.prototype = {
   returning: function(returnValue) {
     this.returnValue = returnValue;
@@ -64,7 +66,9 @@ JsMock.Expectation.prototype = {
   },
 
   _isEqual: function(left, right) {
-    if (left instanceof Array && right instanceof Array && left.length == right.length) {
+    if (right === JsMock.ANYTHING) {
+      return true;
+    } else if (left instanceof Array && right instanceof Array && left.length == right.length) {
       for (var i = 0; i < left.length; i++) {
         if (!this._isEqual(left[i], right[i])) return false;
       }
@@ -108,6 +112,7 @@ JsMock.expectNothingMore = function() {
 JsMock.validate = function(theMock) {
   var mockInfo = theMock.__mockInfo;
   if (mockInfo.expectations.length > 0) {
+    console.log(mockInfo.expectations);
     throw new Error("unsatisfied expectations remain!");
   }
 };

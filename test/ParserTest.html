@@ -60,7 +60,7 @@
     var spyGenerator = new JsMock(JspScript.Generator, function() {
       JsMock.expect('prolog');
       JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
-      JsMock.expect('tagStart', 'x', 'test', [], parser);
+      JsMock.expect('tagStart', 'x', 'test', []);
       JsMock.expect('text', 'contents');
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
@@ -77,7 +77,7 @@
 
     var spyGenerator = new JsMock(JspScript.Generator, function() {
       JsMock.expect('prolog');
-      JsMock.expect('tagStart', 'jsp', 'doBody', [], parser);
+      JsMock.expect('tagStart', 'jsp', 'doBody', []);
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
     });
@@ -103,7 +103,7 @@
       JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
       JsMock.expect('text', '-après');
       JsMock.expect('text', '-after-');
-      JsMock.expect('tagStart', 'x', 'test', [], parser);
+      JsMock.expect('tagStart', 'x', 'test', []);
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
     });
@@ -124,7 +124,7 @@
       JsMock.expect('text', 'attr from outside ');
       JsMock.expect('expression', 'g(\'value\')');
       JsMock.expect('text', ', ');
-      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
+      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}]);
       JsMock.expect('text', 'inside a tag body it ');
       JsMock.expect('expression', 'g(\'value\')');
       JsMock.expect('text', ' ');
