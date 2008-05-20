@@ -81,7 +81,7 @@ JspScript.Parser.prototype.parseFunctionBody = function(nodes, url) {
   this.currentUrl_ = url || null;
   try {
     var treeTop = new JspScript.Parser.INode();
-    this.walkNodes_(nodes, new JspScript.Generator(), treeTop);
+    this.walkNodes_(nodes, treeTop);
     return treeTop;
   } finally {
     this.currentUrl_ = previousUrl;
@@ -98,17 +98,17 @@ JspScript.Parser.prototype.generateFunctionBody = function(nodes, generator, url
   generator.generateFunctionBody(parsed);
 };
 
-JspScript.Parser.prototype.walkNodes_ = function(nodes, generator, iNode) {
+JspScript.Parser.prototype.walkNodes_ = function(nodes, iNode) {
   for (var i = 0; i < nodes.length; i++) {
     var node = nodes.item(i);
     //noinspection JSUnresolvedVariable
     switch (node.nodeType) {
       case Node.TEXT_NODE:
-        this.genTextCode_(node.nodeValue + "", generator, iNode);
+        this.genTextCode_(node.nodeValue + "", iNode);
         break;
 
       case Node.ELEMENT_NODE:
-        this.genElementCode_(node, generator, iNode);
+        this.genElementCode_(node, iNode);
         break;
     }
   }
@@ -119,21 +119,10 @@ JspScript.Parser.prototype.parseAttributes_ = function(attributes) {
   var needPlus = false;
   var out = '';
 
-  var attrGenerator = {
-    text: function(s) {
-      if (needPlus) out += '+'; needPlus = true;
-      out += '\'' + JspScript.jsEsc(s) + '\'';
-    },
-    expression: function(s) {
-      if (needPlus) out += '+'; needPlus = true;
-      out += s;
-    }
-  }
-
   for (var i = 0; i < attributes.length; i++) {
     var attribute = attributes.item(i);
     var attr = new JspScript.Parser.Attr(JspScript.jsEsc(attribute.name + ""));
-    this.genTextCode_(attribute.value + "", attrGenerator, attr);
+    this.genTextCode_(attribute.value + "", attr);
     attrsOut.push(attr);
     needPlus = false;
     out = '';
@@ -141,24 +130,21 @@ JspScript.Parser.prototype.parseAttributes_ = function(attributes) {
   return attrsOut;
 }
 
-JspScript.Parser.prototype.genTextCode_ = function(text, generator, iNode) {
+JspScript.Parser.prototype.genTextCode_ = function(text, iNode) {
   JspScript.Template.RE_EL.lastIndex = 0;
 
   var start = 0;
   var match;
   while ((match = JspScript.Template.RE_EL.exec(text))) {
     if (start < match.index) {
-      generator.text(text.substring(start, match.index));
       iNode.add(new JspScript.Parser.TextNode(text.substring(start, match.index)));
       start = match.index;
     }
 
     if (match[0][0] == '\\') { // escaped expression: \${xxx}
-      generator.text(match[0].substring(1));
       iNode.add(new JspScript.Parser.TextNode(match[0].substring(1)));
     } else {
       var elExpr = this.parseExpression(match[1]);
-      generator.expression(JspScript.Generator.translateElExpression(elExpr));
       iNode.add(new JspScript.Parser.ElNode(JspScript.Generator.translateElExpression(elExpr)));
     }
 
@@ -166,13 +152,12 @@ JspScript.Parser.prototype.genTextCode_ = function(text, generator, iNode) {
   }
 
   if (start < text.length) {
-    generator.text(text.substring(start));
     iNode.add(new JspScript.Parser.TextNode(text.substring(start)));
   }
 };
 
 
-JspScript.Parser.prototype.genElementCode_ = function(el, generator, iNode) {
+JspScript.Parser.prototype.genElementCode_ = function(el, iNode) {
   var hasChildren = el.childNodes.length > 0;
 
   var atMatch = JspScript.Template.RE_TAG_AT.exec(el.tagName + ""); // todo: test stringification
@@ -192,7 +177,7 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator, iNode) {
       var url = JspScript.joinUrls(this.env_.baseUrl, this.currentUrl_, includeFile);
       var contents = this.env_.fetchFileContents(url);
       var dom = this.env_.createDomFromString(contents);
-      this.walkNodes_(dom.childNodes, generator, iNode);
+      this.walkNodes_(dom.childNodes, iNode);
     }
     return;
   }
@@ -203,9 +188,9 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator, iNode) {
     var tagName = nsMatch[2];
 
     var tagCallNode = new JspScript.Parser.TagCallNode(tagPrefix, tagName);
-    tagCallNode.attrs = this.parseAttributes_(el.attributes, generator);
+    tagCallNode.attrs = this.parseAttributes_(el.attributes);
     if (hasChildren) {
-      this.walkNodes_(el.childNodes, generator, tagCallNode);
+      this.walkNodes_(el.childNodes, tagCallNode);
     }
     iNode.add(tagCallNode)
 
@@ -213,10 +198,10 @@ JspScript.Parser.prototype.genElementCode_ = function(el, generator, iNode) {
   }
 
   var domNode = new JspScript.Parser.DomNode(el.tagName + "");
-  domNode.attrs = this.parseAttributes_(el.attributes, generator);
+  domNode.attrs = this.parseAttributes_(el.attributes);
   iNode.add(domNode)
   if (hasChildren) {
-    this.walkNodes_(el.childNodes, generator, domNode);
+    this.walkNodes_(el.childNodes, domNode);
   }
 };
 
