@@ -88,16 +88,6 @@ JspScript.Parser.prototype.parseFunctionBody = function(nodes, url) {
   }
 };
 
-/**
- * @deprecated rewrite ParserTest tests and remove this
- */
-JspScript.Parser.prototype.generateFunctionBody = function(nodes, generator, url) {
-  generator.emit_ = JspScript.Generator.prototype.emit_;
-  generator.generateFunctionBody = JspScript.Generator.prototype.generateFunctionBody;
-  var parsed = this.parseFunctionBody(nodes, url);
-  generator.generateFunctionBody(parsed);
-};
-
 JspScript.Parser.prototype.walkNodes_ = function(nodes, iNode) {
   for (var i = 0; i < nodes.length; i++) {
     var node = nodes.item(i);

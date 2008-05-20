@@ -48,7 +48,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.generateFunctionBody(dom.childNodes, spyGenerator);
+    generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }
@@ -83,7 +83,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.generateFunctionBody(dom.childNodes, spyGenerator);
+    generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }
@@ -99,7 +99,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.generateFunctionBody(dom.childNodes, spyGenerator);
+    generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }
@@ -125,7 +125,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.generateFunctionBody(dom.childNodes, spyGenerator, 'baseUrl/thisFile.jsp');
+    generateFunctionBody(dom.childNodes, spyGenerator, 'baseUrl/thisFile.jsp');
 
     JsMock.validate(spyGenerator);
   }
@@ -152,7 +152,7 @@
       JsMock.expect('epilog');
     });
 
-    parser.generateFunctionBody(dom.childNodes, spyGenerator);
+    generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
   }
@@ -223,6 +223,14 @@
     assertEquals('f(\'fn\',\'length\')(f(\'fn\',\'toUpperCase\')("blah"))',
         xlate('fn:length(fn:toUpperCase("blah"))'));
   }
+
+  function generateFunctionBody(nodes, generator, opt_url) {
+    var parsed = parser.parseFunctionBody(nodes, opt_url);
+
+    generator.emit_ = JspScript.Generator.prototype.emit_;
+    generator.generateFunctionBody = JspScript.Generator.prototype.generateFunctionBody;
+    generator.generateFunctionBody(parsed);
+  };
 
   function xlate(expression) {
     return JspScript.Generator.translateElExpression(parser.parseExpression(expression));
