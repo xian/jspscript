@@ -39,7 +39,7 @@
       JsMock.expect('prolog');
       JsMock.expect('element', 'html', [], true);
       JsMock.expect('element', 'body', [], true);
-      JsMock.expect('element', 'h2', [{name: 'id', value: '\'header\''}], true);
+      JsMock.expect('element', 'h2', [new JspScript.Parser.Attr('id', [new JspScript.Parser.TextNode('header')])], true);
       JsMock.expect('text', 'Hello World!');
       JsMock.expect('pop');
       JsMock.expect('text', 'More text...\n');
@@ -51,6 +51,23 @@
     parser.generateFunctionBody(dom.childNodes, spyGenerator);
 
     JsMock.validate(spyGenerator);
+  }
+
+  function testAttrGeneration_Parser() {
+    var dom = env.createDomFromString(
+        '<x:test attr="${value1}, ${value2}">contents</x:test>');
+    var parsed = parser.parseFunctionBody(dom.childNodes, 'url');
+
+    var xTestTag = parsed.children[0];
+    assertEquals('x', xTestTag.prefix);
+    assertEquals('test', xTestTag.name);
+    assertEquals('contents', xTestTag.children[0].text);
+    assertEquals('attr', xTestTag.attrs[0].name);
+    var attrValue = xTestTag.attrs[0].value;
+    assertEquals(3, attrValue.length);
+    assertEquals('g(\'value1\')', attrValue[0].el);
+    assertEquals(', ', attrValue[1].text);
+    assertEquals('g(\'value2\')', attrValue[2].el);
   }
 
   function testTaglibTagBody_Parser() {
@@ -124,7 +141,8 @@
       JsMock.expect('text', 'attr from outside ');
       JsMock.expect('expression', 'g(\'value\')');
       JsMock.expect('text', ', ');
-      JsMock.expect('tagStart', 'x', 'test', [{name: 'tagValue', value: '\'also\''}]);
+      JsMock.expect('tagStart', 'x', 'test', [new JspScript.Parser.Attr('tagValue',
+          [new JspScript.Parser.TextNode('also')])]);
       JsMock.expect('text', 'inside a tag body it ');
       JsMock.expect('expression', 'g(\'value\')');
       JsMock.expect('text', ' ');

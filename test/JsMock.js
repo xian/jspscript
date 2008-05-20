@@ -74,7 +74,7 @@ JsMock.Expectation.prototype = {
       }
       return true;
     } else if (typeof(left) == "object" && typeof(right) == "object") {
-      assertHashEquals(left, right);
+      assertObjectEquals(left, right);
       return true;
     } else {
       return left == right;

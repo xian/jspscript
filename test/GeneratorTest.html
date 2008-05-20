@@ -39,8 +39,12 @@
     spyGenerator.element('body', [], true);
 
     out = '';
-    spyGenerator.element('h2', [{name: 'id', value: '\'header\''}], true);
-    assertEquals("q('h2','id','header');\n", out);
+    spyGenerator.element('h2', [new JspScript.Parser.Attr('id', [
+        new JspScript.Parser.ElNode('g(\'prefix\')'),
+        new JspScript.Parser.TextNode('_'),
+        new JspScript.Parser.ElNode('g(\'number\')')
+    ])], true);
+    assertEquals("q('h2','id',(g(\'prefix\'))+'_'+(g(\'number\')));\n", out);
 
     spyGenerator.text('Hello World!');
     spyGenerator.pop();
@@ -52,7 +56,7 @@
     var script = spyGenerator.getScript();
 //    console.log(script);
     var fn = new Function('attrs', script)
-    var rendered = fn({});
+    var rendered = fn({prefix: 'pfx', number: 1});
 
     assertNodes(['<HTML>'], rendered);
     var html = rendered[0];
@@ -60,7 +64,7 @@
     var body = html.childNodes[0];
     assertChildren(['<H2>', 'More text...\n'], body);
     var h2 = body.childNodes[0];
-    assertEquals('header', h2.getAttribute('id'));
+    assertEquals('pfx_1', h2.getAttribute('id'));
   }
 
   function testTaglibTagBody_Generator() {
@@ -135,7 +139,8 @@
     spyGenerator.text(', ');
 
     out = '';
-    spyGenerator.tagStart('x', 'test', [{name: 'tagValue', value: '\'also\''}], parser);
+    spyGenerator.tagStart('x', 'test', [new JspScript.Parser.Attr('tagValue',
+          [new JspScript.Parser.TextNode('also')])], parser);
     spyGenerator.text('inside a tag body it ');
     spyGenerator.expression('g(\'value\')');
     spyGenerator.text(' ');

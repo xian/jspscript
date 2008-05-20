@@ -18,6 +18,61 @@ JspScript.Generator.prototype.getScript = function() {
   return this.out_;
 }
 
+JspScript.Generator.prototype.generateFunctionBody = function(iNode) {
+  this.prolog();
+  this.emit_(iNode);
+  this.epilog();
+};
+
+JspScript.Generator.prototype.emit_ = function(iNode) {
+  var i;
+  if (iNode instanceof JspScript.Parser.TextNode) {
+    this.text(iNode.text);
+  } else if (iNode instanceof JspScript.Parser.ElNode) {
+    this.expression(iNode.el);
+  } else if (iNode instanceof JspScript.Parser.DomNode) {
+    this.element(iNode.tagName, iNode.attrs, iNode.children.length > 0);
+    for (i = 0; i < iNode.children.length; i++) {
+      this.emit_(iNode.children[i]);
+    }
+    if (iNode.children.length > 0) {
+      this.pop();
+    }
+  } else if (iNode instanceof JspScript.Parser.TaglibDeclarationNode) {
+    this.taglibDeclaration(iNode.prefix, iNode.url);
+  } else if (iNode instanceof JspScript.Parser.TagCallNode) {
+    this.tagStart(iNode.prefix, iNode.name, iNode.attrs);
+    for (i = 0; i < iNode.children.length; i++) {
+      this.emit_(iNode.children[i]);
+    }
+    this.tagEnd();
+  } else if (iNode instanceof JspScript.Parser.INode) {
+    for (i = 0; i < iNode.children.length; i++) {
+      this.emit_(iNode.children[i]);
+    }
+  } else {
+    throw new Error('unknown node!');
+  }
+};
+
+JspScript.Generator.prototype.emitAttrValue_ = function(iNode) {
+  for (var i = 0; i < iNode.value.length; i++) {
+    var valueNode = iNode.value[i];
+
+    if (i > 0) {
+      this.put('+');
+    }
+
+    if (valueNode instanceof JspScript.Parser.TextNode) {
+      this.put('\'' + JspScript.jsEsc(valueNode.text) + '\'');
+    } else if (valueNode instanceof JspScript.Parser.ElNode) {
+      this.put('(' + valueNode.el + ')');
+    } else {
+      throw new Error('unknown node!');
+    }
+  }
+};
+
 JspScript.Generator.prototype.preface = function() {
 };
 
@@ -94,16 +149,17 @@ JspScript.Generator.prototype.expression = function(s) {
 };
 
 JspScript.Generator.prototype.element = function(tagName, attributes, hasChildren) {
-  var attrList = '';
-  for (var i = 0; i < attributes.length; i++) {
-    attrList += ',\'';
-    var attribute = attributes[i];
-    attrList += JspScript.jsEsc(attribute.name + ""); // todo: test stringification
-    attrList += '\',';
-    attrList += attribute.value + ""; // todo: test stringification
-  }
   this.put((hasChildren ? 'q' : 'a') +
-      '(\'' + JspScript.jsEsc(tagName) + '\'' + attrList + ');\n');
+      '(\'' + JspScript.jsEsc(tagName) + '\'');
+
+  for (var i = 0; i < attributes.length; i++) {
+    this.put(',\'');
+    var attribute = attributes[i];
+    this.put(JspScript.jsEsc(attribute.name));
+    this.put('\',');
+    this.emitAttrValue_(attribute);
+  }
+  this.put(');\n');
 };
 
 JspScript.Generator.prototype.pop = function() {
@@ -122,9 +178,10 @@ JspScript.Generator.prototype.attrJson = function(attributes) {
   this.put('{');
   for (var i = 0; i < attributes.length; i++) {
     if (i > 0) this.put(',');
-    this.put(attributes[i].name + "");  // todo: test stringification
+    var attribute = attributes[i];
+    this.put(JspScript.jsEsc(attribute.name));
     this.put(':');
-    this.put(attributes[i].value + "");  // todo: test stringification
+    this.emitAttrValue_(attribute);
   }
   this.put('}');
 };
