@@ -65,9 +65,9 @@
     assertEquals('attr', xTestTag.attrs[0].name);
     var attrValue = xTestTag.attrs[0].value;
     assertEquals(3, attrValue.length);
-    assertEquals('g(\'value1\')', attrValue[0].el);
+    assertObjectEquals([symbolLookupToken('value1')], attrValue[0].tokens);
     assertEquals(', ', attrValue[1].text);
-    assertEquals('g(\'value2\')', attrValue[2].el);
+    assertObjectEquals([symbolLookupToken('value2')], attrValue[2].tokens);
   }
 
   function testTaglibTagBody_Parser() {
@@ -139,14 +139,20 @@
       JsMock.expect('prolog');
       JsMock.expect('taglibDeclaration', 'x', 'http://xxx/xxx');
       JsMock.expect('text', 'attr from outside ');
-      JsMock.expect('expression', 'g(\'value\')');
+      JsMock.expect('translateElExpression', new JspScript.Parser.ElExpression([symbolLookupToken('value')]))
+          .returning('123');
+      JsMock.expect('expression', '123');
       JsMock.expect('text', ', ');
       JsMock.expect('tagStart', 'x', 'test', [new JspScript.Parser.Attr('tagValue',
           [new JspScript.Parser.TextNode('also')])]);
       JsMock.expect('text', 'inside a tag body it ');
-      JsMock.expect('expression', 'g(\'value\')');
+      JsMock.expect('translateElExpression', new JspScript.Parser.ElExpression([symbolLookupToken('value')]))
+          .returning('456');
+      JsMock.expect('expression', '456');
       JsMock.expect('text', ' ');
-      JsMock.expect('expression', 'g(\'tagValue\')');
+      JsMock.expect('translateElExpression', new JspScript.Parser.ElExpression([symbolLookupToken('tagValue')]))
+          .returning('789');
+      JsMock.expect('expression', '789');
       JsMock.expect('text', '!');
       JsMock.expect('tagEnd');
       JsMock.expect('epilog');
@@ -224,6 +230,12 @@
         xlate('fn:length(fn:toUpperCase("blah"))'));
   }
 
+  function symbolLookupToken(value) {
+    var token = new JspScript.Parser.Token(JspScript.Parser.ElExpression.SYMBOL_LOOKUP);
+    token.append(value);
+    return token;
+  }
+
   function generateFunctionBody(nodes, generator, opt_url) {
     var parsed = parser.parseFunctionBody(nodes, opt_url);
 
@@ -233,7 +245,7 @@
   };
 
   function xlate(expression) {
-    return JspScript.Generator.translateElExpression(parser.parseExpression(expression));
+    return new JspScript.Generator().translateElExpression(parser.parseExpression(expression));
   }
 
 

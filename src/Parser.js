@@ -3,14 +3,17 @@ JspScript.Parser = function(env) {
   this.currentUrl_ = null;
 }
 
-JspScript.Parser.ElExpression = function() {
-  this.tokens = [];
+JspScript.Parser.ElExpression = function(opt_tokens) {
+  this.tokens = opt_tokens || [];
 };
 
 JspScript.Parser.ElExpression.SYMBOL_LOOKUP = 'symbol-lookup';
 JspScript.Parser.ElExpression.FUNCTION_LOOKUP = 'function-lookup';
 JspScript.Parser.ElExpression.JS_CODE_LITERAL = 'js-code-literal';
 
+/**
+ * @param {JspScript.Parser.Token} token
+ */
 JspScript.Parser.ElExpression.prototype.addToken = function(token) {
   if (token.value != '') this.tokens.push(token);
 };
@@ -37,11 +40,6 @@ JspScript.Parser.TextNode = function(text) {
   this.text = text;
 };
 JspScript.inherit(JspScript.Parser.TextNode, JspScript.Parser.INode);
-
-JspScript.Parser.ElNode = function(el) {
-  this.el = el;
-};
-JspScript.inherit(JspScript.Parser.ElNode, JspScript.Parser.INode);
 
 JspScript.Parser.DomNode = function(tagName) {
   JspScript.Parser.INode.call(this);
@@ -134,8 +132,7 @@ JspScript.Parser.prototype.genTextCode_ = function(text, iNode) {
     if (match[0][0] == '\\') { // escaped expression: \${xxx}
       iNode.add(new JspScript.Parser.TextNode(match[0].substring(1)));
     } else {
-      var elExpr = this.parseExpression(match[1]);
-      iNode.add(new JspScript.Parser.ElNode(JspScript.Generator.translateElExpression(elExpr)));
+      iNode.add(this.parseExpression(match[1]));
     }
 
     start = JspScript.Template.RE_EL.lastIndex;

@@ -40,9 +40,9 @@
 
     out = '';
     spyGenerator.element('h2', [new JspScript.Parser.Attr('id', [
-        new JspScript.Parser.ElNode('g(\'prefix\')'),
+        new JspScript.Parser.ElExpression([symbolLookupToken('prefix')]),
         new JspScript.Parser.TextNode('_'),
-        new JspScript.Parser.ElNode('g(\'number\')')
+        new JspScript.Parser.ElExpression([symbolLookupToken('number')])
     ])], true);
     assertEquals("q('h2','id',(g(\'prefix\'))+'_'+(g(\'number\')));\n", out);
 
@@ -246,6 +246,16 @@
 
     var template = env.createTemplateFromDom({childNodes: nodes});
     assertText('[DOM: <tag name="value">text</tag>]', template.render({}));
+  }
+
+  /**
+   * @param {string} value
+   * @return {JspScript.Parser.Token}
+   */
+  function symbolLookupToken(value) {
+    var token = new JspScript.Parser.Token(JspScript.Parser.ElExpression.SYMBOL_LOOKUP);
+    token.append(value);
+    return token;
   }
 
 </script>

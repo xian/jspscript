@@ -28,8 +28,8 @@ JspScript.Generator.prototype.emit_ = function(iNode) {
   var i;
   if (iNode instanceof JspScript.Parser.TextNode) {
     this.text(iNode.text);
-  } else if (iNode instanceof JspScript.Parser.ElNode) {
-    this.expression(iNode.el);
+  } else if (iNode instanceof JspScript.Parser.ElExpression) {
+    this.expression(this.translateElExpression(iNode));
   } else if (iNode instanceof JspScript.Parser.DomNode) {
     this.element(iNode.tagName, iNode.attrs, iNode.children.length > 0);
     for (i = 0; i < iNode.children.length; i++) {
@@ -65,10 +65,10 @@ JspScript.Generator.prototype.emitAttrValue_ = function(iNode) {
 
     if (valueNode instanceof JspScript.Parser.TextNode) {
       this.put('\'' + JspScript.jsEsc(valueNode.text) + '\'');
-    } else if (valueNode instanceof JspScript.Parser.ElNode) {
-      this.put('(' + valueNode.el + ')');
+    } else if (valueNode instanceof JspScript.Parser.ElExpression) {
+      this.put('(' + this.translateElExpression(valueNode) + ')');
     } else {
-      throw new Error('unknown node!');
+      throw new Error('unknown node!' + valueNode);
     }
   }
 };
@@ -228,7 +228,7 @@ JspScript.Generator.prototype.tagEnd = function() {
   this.put(', attrs);\n')
 };
 
-JspScript.Generator.translateElExpression = function(elExpr) {
+JspScript.Generator.prototype.translateElExpression = function(elExpr) {
   var script = '';
   for (var i = 0; i < elExpr.tokens.length; i++) {
     var token = elExpr.tokens[i];
