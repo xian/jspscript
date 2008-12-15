@@ -1,11 +1,11 @@
-Template = function(templateFile) {
+Jsp1Template = function(templateFile) {
   this.templateText_ = this.getFile_(templateFile);
   this.compiled_ = false;
 }
 
-Template.ELEMENT_FINDER_ATTR = 'template:id';
+Jsp1Template.ELEMENT_FINDER_ATTR = 'template:id';
 
-Template.prototype.compile_ = function() {
+Jsp1Template.prototype.compile_ = function() {
   var re = /((?:.|\n)*?)(<%=?|%>)/g;
   var escRe = /['\\]/g;
   var newlineRe = /\n/g;
@@ -39,7 +39,7 @@ Template.prototype.compile_ = function() {
   this.renderer_ = new Function("_", f);
 }
 
-Template.prototype.render = function(map, dom) {
+Jsp1Template.prototype.render = function(map, dom) {
   if (!this.compiled_) {
     this.compile_();
   }
@@ -56,14 +56,14 @@ Template.prototype.render = function(map, dom) {
     var allElems = holder.getElementsByTagName('*');
     for (var i = 0; i < allElems.length; i++) {
       var elem = allElems[i];
-      var attrValue = elem.getAttribute(Template.ELEMENT_FINDER_ATTR);
+      var attrValue = elem.getAttribute(Jsp1Template.ELEMENT_FINDER_ATTR);
       if (attrValue != null) {
         if (dom[attrValue] instanceof Array) {
           dom[attrValue].push(elem);
         } else {
           dom[attrValue] = elem;
         }
-        elem.removeAttribute(Template.ELEMENT_FINDER_ATTR);
+        elem.removeAttribute(Jsp1Template.ELEMENT_FINDER_ATTR);
       }
     }
   }
@@ -71,7 +71,7 @@ Template.prototype.render = function(map, dom) {
   return holder;
 }
 
-Template.prototype.getFile_ = function(url) {
+Jsp1Template.prototype.getFile_ = function(url) {
   var xhrRequest;
   if (window.XMLHttpRequest) {
     xhrRequest = new XMLHttpRequest();

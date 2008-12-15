@@ -5,13 +5,13 @@
   <title>Test</title>
   <script type="text/javascript" src="../jsunit/app/jsUnitCore.js"></script>
   <script type="text/javascript" src="TestSupport.js"></script>
-  <script type="text/javascript" src="../src/Template.js"></script>
+  <script type="text/javascript" src="../src/Jsp1Template.js"></script>
 </head>
 <body>
 
 <script type="text/javascript">
   function testBasic() {
-    var template = new Template("../test/template.html");
+    var template = new Jsp1Template("../test/template.html");
     var dom = {listItem: []};
     var elem = template.render({headline: 'this is the headline', body: 'body'}, dom);
     var div = document.createElement('div');
